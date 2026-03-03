@@ -235,6 +235,13 @@ function drawKittyCharacter(ctx, cx, cy, r, colors, bobOffset) {
   ctx.fillStyle = colors.nose || '#ffd700';
   ctx.beginPath(); ctx.ellipse(cx, by + r*0.1, r*0.08, r*0.06, 0, 0, Math.PI*2); ctx.fill();
 
+  // ---- BLUSH (Hello Kitty's iconic rosy cheeks) ----
+  ctx.fillStyle = '#ffaacc';
+  ctx.globalAlpha = 0.55;
+  ctx.beginPath(); ctx.ellipse(cx - r*0.52, by + r*0.12, r*0.20, r*0.13, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx + r*0.52, by + r*0.12, r*0.20, r*0.13, 0, 0, Math.PI*2); ctx.fill();
+  ctx.globalAlpha = 1;
+
   // ---- WHISKERS ----
   ctx.strokeStyle = 'rgba(60,40,40,0.26)'; ctx.lineWidth = 0.9;
   for (let i = -1; i <= 1; i++) {
@@ -415,24 +422,24 @@ function drawCinnaPup(ctx, cx, cy, s, c) {
   ctx.beginPath(); ctx.moveTo(x - r*0.50, y - r*0.12); ctx.lineTo(x - r*1.28, y - r*0.46); ctx.lineTo(x - r*1.06, y + r*0.30); ctx.lineTo(x - r*0.42, y + r*0.16); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(x + r*0.50, y - r*0.12); ctx.lineTo(x + r*1.28, y - r*0.46); ctx.lineTo(x + r*1.06, y + r*0.30); ctx.lineTo(x + r*0.42, y + r*0.16); ctx.closePath(); ctx.fill(); ctx.stroke();
 
-  // Big floppy BLUE ears (hang down — Cinnamoroll's most iconic feature)
-  ctx.fillStyle = _sphereGrad(ctx, x - r*0.98, y + r*0.5, r*0.44, c.ear);
+  // Big floppy BLUE ears (hang way down — Cinnamoroll's most iconic feature)
+  ctx.fillStyle = _sphereGrad(ctx, x - r*0.98, y + r*0.85, r*0.46, c.ear);
   ctx.strokeStyle = 'rgba(0,0,0,0.3)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.ellipse(x - r * 0.96, y + r * 0.52, r * 0.44, r * 0.88, -0.18, 0, Math.PI * 2);
+  ctx.ellipse(x - r * 0.94, y + r * 0.88, r * 0.46, r * 1.18, -0.22, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
-  ctx.fillStyle = _sphereGrad(ctx, x + r*0.98, y + r*0.5, r*0.44, c.ear);
+  ctx.fillStyle = _sphereGrad(ctx, x + r*0.98, y + r*0.85, r*0.46, c.ear);
   ctx.beginPath();
-  ctx.ellipse(x + r * 0.96, y + r * 0.52, r * 0.44, r * 0.88, 0.18, 0, Math.PI * 2);
+  ctx.ellipse(x + r * 0.94, y + r * 0.88, r * 0.46, r * 1.18, 0.22, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
   // Ear inner highlights
   ctx.fillStyle = 'rgba(255,255,255,0.22)';
   ctx.beginPath();
-  ctx.ellipse(x - r * 1.06, y + r * 0.18, r * 0.18, r * 0.3, -0.18, 0, Math.PI * 2);
+  ctx.ellipse(x - r * 1.08, y + r * 0.46, r * 0.18, r * 0.36, -0.22, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.ellipse(x + r * 0.86, y + r * 0.18, r * 0.18, r * 0.3, 0.18, 0, Math.PI * 2);
+  ctx.ellipse(x + r * 0.84, y + r * 0.46, r * 0.18, r * 0.36, 0.22, 0, Math.PI * 2);
   ctx.fill();
 
   // White round head
@@ -681,13 +688,10 @@ function drawMelodyBunny(ctx, cx, cy, s, c) {
   ctx.arc(x + r * 0.27, y + r * 0.01, r * 0.035, 0, Math.PI * 2);
   ctx.fill();
 
-  // Small triangle nose
-  ctx.fillStyle = '#ff69b4';
+  // Small yellow nose (My Melody has a tiny yellow oval nose)
+  ctx.fillStyle = '#ffd700';
   ctx.beginPath();
-  ctx.moveTo(x,           y + r * 0.22);
-  ctx.lineTo(x - r * 0.07, y + r * 0.16);
-  ctx.lineTo(x + r * 0.07, y + r * 0.16);
-  ctx.closePath();
+  ctx.ellipse(x, y + r * 0.19, r * 0.065, r * 0.05, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Pink flower on hood (My Melody's detail)
@@ -736,37 +740,36 @@ function drawKeroppi(ctx, cx, cy, s, c) {
   ctx.fill();
 
   // ---- HUGE goggle eyes on TOP of head (Keroppi's most iconic feature) ----
-  _sphere(ctx, x - r * 0.43, y - r * 0.68, r * 0.35, c.eyeWhite, 'rgba(0,0,0,0.35)');
-  _sphere(ctx, x + r * 0.43, y - r * 0.68, r * 0.35, c.eyeWhite, 'rgba(0,0,0,0.35)');
+  _sphere(ctx, x - r * 0.44, y - r * 0.70, r * 0.42, c.eyeWhite, 'rgba(0,0,0,0.35)');
+  _sphere(ctx, x + r * 0.44, y - r * 0.70, r * 0.42, c.eyeWhite, 'rgba(0,0,0,0.35)');
   // Pupils
   ctx.fillStyle = c.pupil;
   ctx.beginPath();
-  ctx.arc(x - r * 0.41, y - r * 0.66, r * 0.21, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.42, y - r * 0.68, r * 0.26, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.45, y - r * 0.66, r * 0.21, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.46, y - r * 0.68, r * 0.26, 0, Math.PI * 2);
   ctx.fill();
   // Eye shine
   ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.arc(x - r * 0.34, y - r * 0.74, r * 0.09, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.33, y - r * 0.79, r * 0.11, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.52, y - r * 0.74, r * 0.09, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.55, y - r * 0.79, r * 0.11, 0, Math.PI * 2);
   ctx.fill();
 
-  // Wide happy frog grin (Keroppi always grins)
+  // V-shaped frog grin (Keroppi's signature W/V mouth)
   ctx.strokeStyle = c.mouth;
   ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
   ctx.beginPath();
-  ctx.arc(x, y + r * 0.3, r * 0.48, 0.08, Math.PI - 0.08);
-  ctx.stroke();
-  // Upturned grin corners
-  ctx.beginPath();
-  ctx.arc(x - r * 0.47, y + r * 0.3, r * 0.09, Math.PI * 0.5, Math.PI);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(x + r * 0.47, y + r * 0.3, r * 0.09, 0, Math.PI * 0.5);
+  ctx.moveTo(x - r * 0.38, y + r * 0.22);
+  ctx.lineTo(x - r * 0.14, y + r * 0.42);
+  ctx.lineTo(x,            y + r * 0.28);
+  ctx.lineTo(x + r * 0.14, y + r * 0.42);
+  ctx.lineTo(x + r * 0.38, y + r * 0.22);
   ctx.stroke();
 
   ctx.restore();
@@ -916,29 +919,38 @@ function drawChococat(ctx, cx, cy, s, c) {
   ctx.fill();
 
   // ---- BIG chocolate oval nose (Chococat's #1 defining feature) ----
-  _sphere(ctx, x, y + r * 0.06, r * 0.24, c.nose, 'rgba(0,0,0,0.3)');
+  _sphere(ctx, x, y + r * 0.18, r * 0.26, c.nose, 'rgba(0,0,0,0.3)');
 
-  // Small simple dot eyes (above the big nose)
-  ctx.fillStyle = '#3a3a3a';
+  // ---- HUGE black eyes (Chococat's other defining feature alongside the nose) ----
+  ctx.fillStyle = '#1a1a1a';
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.lineWidth = 0.8;
   ctx.beginPath();
-  ctx.arc(x - r * 0.3, y - r * 0.22, r * 0.11, 0, Math.PI * 2);
+  ctx.ellipse(x - r * 0.29, y - r * 0.30, r * 0.22, r * 0.20, 0, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(x + r * 0.29, y - r * 0.30, r * 0.22, r * 0.20, 0, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
+  // Eye shine (two dots per eye, very sparkly)
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(x - r * 0.21, y - r * 0.38, r * 0.08, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.3, y - r * 0.22, r * 0.11, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.beginPath();
-  ctx.arc(x - r * 0.26, y - r * 0.26, r * 0.04, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.35, y - r * 0.25, r * 0.04, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.34, y - r * 0.26, r * 0.04, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.37, y - r * 0.38, r * 0.08, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + r * 0.23, y - r * 0.25, r * 0.04, 0, Math.PI * 2);
   ctx.fill();
 
   // Whiskers
   ctx.strokeStyle = c.whisker || '#888';
   ctx.lineWidth = 0.8;
   for (let i = -1; i <= 1; i++) {
-    const wy = y + r * 0.12 + i * r * 0.12;
+    const wy = y + r * 0.24 + i * r * 0.12;
     ctx.beginPath();
     ctx.moveTo(x - r * 0.22, wy); ctx.lineTo(x - r * 0.88, wy); ctx.stroke();
     ctx.beginPath();
@@ -1463,9 +1475,9 @@ function drawKuromiBoss(ctx, cx, cy, s, c) {
   ctx.ellipse(cx - r * 0.3, cy - r * 0.52, r * 0.32, r * 0.18, -0.3, 0, Math.PI * 2);
   ctx.fill();
 
-  // Skull motif on hood
-  const sx = cx - r * 0.62, sy = cy - r * 0.26;
-  _sphere(ctx, sx, sy, r * 0.14, c.skull, 'rgba(0,0,0,0.2)');
+  // Skull motif on hood (pink skull, centered — Kuromi's most iconic detail)
+  const sx = cx, sy = cy - r * 0.28;
+  _sphere(ctx, sx, sy, r * 0.18, '#ff69b4', 'rgba(0,0,0,0.3)');
   ctx.fillStyle = c.skullEye;
   ctx.beginPath();
   ctx.arc(sx - r * 0.06, sy - r * 0.02, r * 0.04, 0, Math.PI * 2);
