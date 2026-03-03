@@ -2,16 +2,63 @@
 // RENDERER.JS — All Canvas 2D drawing functions
 // ============================================================
 
-// ---- Helpers ----
+// ---- Color Helpers ----
 
-function _outline(ctx, color, width) {
-  ctx.strokeStyle = color || '#000';
-  ctx.lineWidth = width || 1.5;
+function _hexToRgb(hex) {
+  if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) return [128, 128, 128];
+  const h = hex.replace('#', '');
+  if (h.length === 3) {
+    return [parseInt(h[0]+h[0],16), parseInt(h[1]+h[1],16), parseInt(h[2]+h[2],16)];
+  }
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
 }
 
-// Overlay highlight + shadow on a circle to give it a 3D sphere look
+function _lighten(hex, t) {
+  const [r,g,b] = _hexToRgb(hex);
+  return `rgb(${Math.min(255,Math.round(r+(255-r)*t))},${Math.min(255,Math.round(g+(255-g)*t))},${Math.min(255,Math.round(b+(255-b)*t))})`;
+}
+
+function _darken(hex, t) {
+  const [r,g,b] = _hexToRgb(hex);
+  return `rgb(${Math.round(r*(1-t))},${Math.round(g*(1-t))},${Math.round(b*(1-t))})`;
+}
+
+// ---- Drawing Helpers ----
+
+// Radial gradient simulating 3D sphere (light from upper-left)
+function _sphereGrad(ctx, cx, cy, r, color) {
+  const hlx = cx - r * 0.28, hly = cy - r * 0.32;
+  const grad = ctx.createRadialGradient(hlx, hly, r * 0.01, cx + r * 0.08, cy + r * 0.1, r * 1.15);
+  grad.addColorStop(0,    _lighten(color, 0.58));
+  grad.addColorStop(0.25, _lighten(color, 0.2));
+  grad.addColorStop(0.6,  color);
+  grad.addColorStop(0.88, _darken(color, 0.22));
+  grad.addColorStop(1,    _darken(color, 0.5));
+  return grad;
+}
+
+// Draw a filled 3D sphere (gradient fill + specular highlight)
+function _sphere(ctx, cx, cy, r, color, outlineColor) {
+  ctx.fillStyle = _sphereGrad(ctx, cx, cy, r, color);
+  ctx.strokeStyle = outlineColor !== undefined ? outlineColor : 'rgba(0,0,0,0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  if (outlineColor !== false) ctx.stroke();
+  // Specular highlight
+  const spec = ctx.createRadialGradient(cx - r*0.28, cy - r*0.35, 0, cx - r*0.18, cy - r*0.2, r*0.55);
+  spec.addColorStop(0, 'rgba(255,255,255,0.65)');
+  spec.addColorStop(0.4, 'rgba(255,255,255,0.18)');
+  spec.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = spec;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// Overlay highlight + shadow on a circle to give it a 3D sphere look (legacy)
 function _addSphereDepth(ctx, cx, cy, r) {
-  // White highlight (upper-left quadrant)
   const hl = ctx.createRadialGradient(cx - r * 0.28, cy - r * 0.3, 0, cx, cy, r);
   hl.addColorStop(0, 'rgba(255,255,255,0.48)');
   hl.addColorStop(0.42, 'rgba(255,255,255,0.12)');
@@ -20,7 +67,6 @@ function _addSphereDepth(ctx, cx, cy, r) {
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.fill();
-  // Dark shadow (lower-right edge)
   const sh = ctx.createRadialGradient(cx, cy, r * 0.45, cx + r * 0.15, cy + r * 0.2, r * 1.05);
   sh.addColorStop(0, 'rgba(0,0,0,0)');
   sh.addColorStop(1, 'rgba(0,0,0,0.22)');
@@ -30,149 +76,175 @@ function _addSphereDepth(ctx, cx, cy, r) {
   ctx.fill();
 }
 
+// Soft elliptical drop-shadow beneath a character
+function _dropShadow(ctx, cx, groundY, r) {
+  const s = ctx.createRadialGradient(cx, groundY, 0, cx, groundY, r);
+  s.addColorStop(0, 'rgba(0,0,0,0.22)');
+  s.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = s;
+  ctx.beginPath();
+  ctx.ellipse(cx, groundY, r * 0.88, r * 0.18, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 // Draw a bow (Hello Kitty-style) centered at cx,cy with radius r
 function drawBow(ctx, cx, cy, r, color) {
   ctx.save();
-  ctx.fillStyle = color;
   ctx.strokeStyle = 'rgba(0,0,0,0.4)';
   ctx.lineWidth = 1;
-  // Left loop
+
+  // Left loop (slightly lighter)
+  ctx.fillStyle = _lighten(color, 0.12);
   ctx.beginPath();
   ctx.ellipse(cx - r * 0.65, cy, r * 0.55, r * 0.38, -0.25, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
-  // Right loop
+  // Left loop highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.38)';
+  ctx.beginPath();
+  ctx.ellipse(cx - r * 0.78, cy - r * 0.1, r * 0.22, r * 0.13, -0.25, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Right loop (slightly darker for depth)
+  ctx.fillStyle = _darken(color, 0.08);
   ctx.beginPath();
   ctx.ellipse(cx + r * 0.65, cy, r * 0.55, r * 0.38, 0.25, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
+  // Right loop highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.38)';
+  ctx.beginPath();
+  ctx.ellipse(cx + r * 0.52, cy - r * 0.1, r * 0.22, r * 0.13, 0.25, 0, Math.PI * 2);
+  ctx.fill();
+
   // Center knot
+  ctx.fillStyle = color;
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
   ctx.beginPath();
   ctx.arc(cx, cy, r * 0.22, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
-  // Highlight on loops
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.beginPath();
-  ctx.ellipse(cx - r * 0.75, cy - r * 0.1, r * 0.18, r * 0.1, -0.25, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(cx + r * 0.55, cy - r * 0.1, r * 0.18, r * 0.1, 0.25, 0, Math.PI * 2);
-  ctx.fill();
+
   ctx.restore();
 }
 
+// ============================================================
+// HELLO KITTY CHARACTER (player + screens)
+// ============================================================
 // Draw Hello Kitty-style cat head/body at (cx, cy) with head radius r
 function drawKittyCharacter(ctx, cx, cy, r, colors, bobOffset) {
   bobOffset = bobOffset || 0;
   const by = cy + bobOffset;
-
   ctx.save();
 
-  // ---- BODY ----
-  ctx.fillStyle = colors.head;
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  // ---- THRUSTER FLAMES (drawn first, behind ship) ----
+  const flame = ctx.createRadialGradient(cx, by + r*2.1, 0, cx, by + r*2.75, r*0.9);
+  flame.addColorStop(0,   'rgba(255,220,255,0.95)');
+  flame.addColorStop(0.3, 'rgba(200,80,255,0.72)');
+  flame.addColorStop(0.7, 'rgba(120,20,220,0.3)');
+  flame.addColorStop(1,   'rgba(60,0,180,0)');
+  ctx.fillStyle = flame;
+  ctx.beginPath();
+  ctx.ellipse(cx, by + r*2.3, r*0.30, r*0.82, 0, 0, Math.PI*2);
+  ctx.fill();
+  for (const sx of [-0.42, 0.42]) {
+    const sf = ctx.createRadialGradient(cx + sx*r, by + r*1.98, 0, cx + sx*r, by + r*2.38, r*0.42);
+    sf.addColorStop(0, 'rgba(220,150,255,0.85)');
+    sf.addColorStop(1, 'rgba(100,20,200,0)');
+    ctx.fillStyle = sf;
+    ctx.beginPath();
+    ctx.ellipse(cx + sx*r, by + r*2.05, r*0.14, r*0.42, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // ---- WINGS ----
+  ctx.fillStyle = _darken(colors.head, 0.12);
+  ctx.strokeStyle = 'rgba(0,0,0,0.32)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(cx - r*0.54, by + r*0.38);
+  ctx.lineTo(cx - r*1.68, by + r*0.90);
+  ctx.lineTo(cx - r*1.40, by + r*1.56);
+  ctx.lineTo(cx - r*0.48, by + r*1.16);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx + r*0.54, by + r*0.38);
+  ctx.lineTo(cx + r*1.68, by + r*0.90);
+  ctx.lineTo(cx + r*1.40, by + r*1.56);
+  ctx.lineTo(cx + r*0.48, by + r*1.16);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  // Wing accent stripe in bow colour
+  ctx.strokeStyle = colors.bow;
   ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.ellipse(cx, by + r * 1.35, r * 0.65, r * 0.55, 0, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
+  ctx.globalAlpha = 0.72;
+  ctx.beginPath(); ctx.moveTo(cx - r*0.54, by + r*0.50); ctx.lineTo(cx - r*1.56, by + r*0.94); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + r*0.54, by + r*0.50); ctx.lineTo(cx + r*1.56, by + r*0.94); ctx.stroke();
+  ctx.globalAlpha = 1;
 
-  // Arms
-  ctx.beginPath();
-  ctx.ellipse(cx - r * 0.75, by + r * 1.4, r * 0.2, r * 0.38, -0.4, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  ctx.beginPath();
-  ctx.ellipse(cx + r * 0.75, by + r * 1.4, r * 0.2, r * 0.38, 0.4, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
+  // ---- HULL BODY ----
+  _sphere(ctx, cx, by + r*1.06, r*0.58, colors.head, 'rgba(0,0,0,0.28)');
 
-  // Belly circle (lighter)
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
-  ctx.beginPath();
-  ctx.ellipse(cx, by + r * 1.4, r * 0.38, r * 0.32, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // ---- THRUSTER NOZZLES ----
+  const noz = _darken(colors.head, 0.30);
+  ctx.fillStyle = noz; ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.ellipse(cx,          by + r*1.70, r*0.20, r*0.12, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(cx - r*0.38, by + r*1.64, r*0.13, r*0.09, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(cx + r*0.38, by + r*1.64, r*0.13, r*0.09, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
 
-  // ---- HEAD ----
-  ctx.fillStyle = colors.head;
-  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.arc(cx, by, r, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  _addSphereDepth(ctx, cx, by, r);
+  // ---- COCKPIT HEAD ----
+  _sphere(ctx, cx, by, r, colors.head, 'rgba(0,0,0,0.28)');
+  // Canopy glass
+  const glass = ctx.createRadialGradient(cx - r*0.22, by - r*0.28, 0, cx, by, r);
+  glass.addColorStop(0,   'rgba(180,220,255,0.40)');
+  glass.addColorStop(0.5, 'rgba(100,170,255,0.12)');
+  glass.addColorStop(1,   'rgba(0,80,200,0)');
+  ctx.fillStyle = glass;
+  ctx.beginPath(); ctx.arc(cx, by, r, 0, Math.PI*2); ctx.fill();
 
-  // ---- EARS ----
-  // Left ear outer
-  ctx.fillStyle = colors.head;
-  ctx.beginPath();
-  ctx.moveTo(cx - r * 0.55, by - r * 0.7);
-  ctx.lineTo(cx - r * 0.9, by - r * 1.38);
-  ctx.lineTo(cx - r * 0.15, by - r * 1.1);
-  ctx.closePath();
-  ctx.fill(); ctx.stroke();
-  // Left ear inner
+  // ---- EARS (rounded dome) ----
+  const lEarCX = cx - r*0.60, lEarCY = by - r*0.90;
+  const rEarCX = cx + r*0.60, rEarCY = by - r*0.90;
+  const earW = r*0.36, earH = r*0.50;
+  ctx.strokeStyle = 'rgba(0,0,0,0.26)'; ctx.lineWidth = 1.2;
+  ctx.fillStyle = _sphereGrad(ctx, lEarCX, lEarCY - earH*0.4, earW, colors.head);
+  ctx.beginPath(); ctx.moveTo(lEarCX - earW, lEarCY);
+  ctx.bezierCurveTo(lEarCX - earW, lEarCY - earH, lEarCX + earW, lEarCY - earH, lEarCX + earW, lEarCY);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.fillStyle = colors.innerEar;
-  ctx.beginPath();
-  ctx.moveTo(cx - r * 0.54, by - r * 0.74);
-  ctx.lineTo(cx - r * 0.82, by - r * 1.26);
-  ctx.lineTo(cx - r * 0.22, by - r * 1.05);
-  ctx.closePath();
-  ctx.fill();
-
-  // Right ear outer
-  ctx.fillStyle = colors.head;
-  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-  ctx.beginPath();
-  ctx.moveTo(cx + r * 0.55, by - r * 0.7);
-  ctx.lineTo(cx + r * 0.9, by - r * 1.38);
-  ctx.lineTo(cx + r * 0.15, by - r * 1.1);
-  ctx.closePath();
-  ctx.fill(); ctx.stroke();
-  // Right ear inner
+  ctx.beginPath(); ctx.moveTo(lEarCX - earW*0.58, lEarCY);
+  ctx.bezierCurveTo(lEarCX - earW*0.58, lEarCY - earH*0.68, lEarCX + earW*0.58, lEarCY - earH*0.68, lEarCX + earW*0.58, lEarCY);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = _sphereGrad(ctx, rEarCX, rEarCY - earH*0.4, earW, colors.head);
+  ctx.strokeStyle = 'rgba(0,0,0,0.26)';
+  ctx.beginPath(); ctx.moveTo(rEarCX - earW, rEarCY);
+  ctx.bezierCurveTo(rEarCX - earW, rEarCY - earH, rEarCX + earW, rEarCY - earH, rEarCX + earW, rEarCY);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.fillStyle = colors.innerEar;
-  ctx.beginPath();
-  ctx.moveTo(cx + r * 0.54, by - r * 0.74);
-  ctx.lineTo(cx + r * 0.82, by - r * 1.26);
-  ctx.lineTo(cx + r * 0.22, by - r * 1.05);
-  ctx.closePath();
-  ctx.fill();
+  ctx.beginPath(); ctx.moveTo(rEarCX - earW*0.58, rEarCY);
+  ctx.bezierCurveTo(rEarCX - earW*0.58, rEarCY - earH*0.68, rEarCX + earW*0.58, rEarCY - earH*0.68, rEarCX + earW*0.58, rEarCY);
+  ctx.closePath(); ctx.fill();
 
   // ---- EYES ----
   ctx.fillStyle = colors.eyes;
-  ctx.beginPath();
-  ctx.arc(cx - r * 0.28, by - r * 0.08, r * 0.1, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx + r * 0.28, by - r * 0.08, r * 0.1, 0, Math.PI * 2);
-  ctx.fill();
-  // Eye shine
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.beginPath();
-  ctx.arc(cx - r * 0.25, by - r * 0.12, r * 0.04, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx + r * 0.31, by - r * 0.12, r * 0.04, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx - r*0.27, by - r*0.1, r*0.085, r*0.11, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx + r*0.27, by - r*0.1, r*0.085, r*0.11, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.beginPath(); ctx.arc(cx - r*0.24, by - r*0.14, r*0.032, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + r*0.30, by - r*0.14, r*0.032, 0, Math.PI*2); ctx.fill();
 
   // ---- NOSE ----
   ctx.fillStyle = colors.nose || '#ffd700';
-  ctx.beginPath();
-  ctx.ellipse(cx, by + r * 0.12, r * 0.09, r * 0.065, 0, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx, by + r*0.1, r*0.08, r*0.06, 0, 0, Math.PI*2); ctx.fill();
 
   // ---- WHISKERS ----
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(60,40,40,0.26)'; ctx.lineWidth = 0.9;
   for (let i = -1; i <= 1; i++) {
-    const wy = by + r * 0.08 + i * r * 0.12;
-    ctx.beginPath();
-    ctx.moveTo(cx - r * 0.18, wy);
-    ctx.lineTo(cx - r * 0.82, wy + i * r * 0.05);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx + r * 0.18, wy);
-    ctx.lineTo(cx + r * 0.82, wy + i * r * 0.05);
-    ctx.stroke();
+    const wy = by + r*0.06 + i*r*0.11;
+    ctx.beginPath(); ctx.moveTo(cx - r*0.15, wy); ctx.lineTo(cx - r*0.84, wy + i*r*0.04); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + r*0.15, wy); ctx.lineTo(cx + r*0.84, wy + i*r*0.04); ctx.stroke();
   }
 
-  // ---- BOW (top-left of head — correct Hello Kitty placement) ----
-  drawBow(ctx, cx - r * 0.52, by - r * 0.82, r * 0.28, colors.bow);
+  // ---- BOW at base of right ear ----
+  drawBow(ctx, cx + r*0.60, by - r*0.90, r*0.30, colors.bow);
 
   ctx.restore();
 }
@@ -194,15 +266,6 @@ function drawPlayer(ctx, player) {
   }
 
   drawKittyCharacter(ctx, cx, cy, r, colors, 0);
-
-  // Engine glow underneath
-  const grad = ctx.createRadialGradient(cx, cy + r * 2, 2, cx, cy + r * 2, r * 0.9);
-  grad.addColorStop(0, 'rgba(255,150,255,0.8)');
-  grad.addColorStop(1, 'rgba(255,100,200,0)');
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.ellipse(cx, cy + r * 2.1, r * 0.5, r * 0.6, 0, 0, Math.PI * 2);
-  ctx.fill();
 
   ctx.restore();
 }
@@ -226,370 +289,561 @@ function drawEnemyByType(ctx, x, y, type, colors, scale) {
   }
 }
 
-// Pompom Pal — golden hamster (mini Pompompurin)
+// ============================================================
+// Pompom Pal — Pompompurin-style golden hamster with beret hat
+// ============================================================
 function drawPompomPal(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
   const r = 14;
-  // Body
-  ctx.fillStyle = c.main;
-  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  _addSphereDepth(ctx, x, y, r);
-  // Ears
-  ctx.beginPath();
-  ctx.arc(x - r * 0.7, y - r * 0.7, r * 0.35, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(x + r * 0.7, y - r * 0.7, r * 0.35, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  // Inner ears
+
+  // Engine glow (top — enemy flies downward)
+  const eg1 = ctx.createRadialGradient(x, y - r*1.6, 0, x, y - r*2.1, r*0.7);
+  eg1.addColorStop(0, 'rgba(255,210,60,0.9)'); eg1.addColorStop(0.5, 'rgba(255,140,0,0.45)'); eg1.addColorStop(1, 'rgba(255,80,0,0)');
+  ctx.fillStyle = eg1; ctx.beginPath(); ctx.ellipse(x, y - r*1.7, r*0.22, r*0.52, 0, 0, Math.PI*2); ctx.fill();
+  // Wings
+  ctx.fillStyle = _darken(c.main, 0.2); ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x - r*0.52, y - r*0.14); ctx.lineTo(x - r*1.32, y - r*0.50); ctx.lineTo(x - r*1.08, y + r*0.28); ctx.lineTo(x - r*0.44, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + r*0.52, y - r*0.14); ctx.lineTo(x + r*1.32, y - r*0.50); ctx.lineTo(x + r*1.08, y + r*0.28); ctx.lineTo(x + r*0.44, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Round golden body (Pompompurin is very round/pudgy)
+  _sphere(ctx, x, y, r, c.main, 'rgba(0,0,0,0.35)');
+
+  // Small round ears
+  _sphere(ctx, x - r * 0.72, y - r * 0.62, r * 0.28, c.main, 'rgba(0,0,0,0.28)');
+  _sphere(ctx, x + r * 0.72, y - r * 0.62, r * 0.28, c.main, 'rgba(0,0,0,0.28)');
   ctx.fillStyle = c.ear;
   ctx.beginPath();
-  ctx.arc(x - r * 0.7, y - r * 0.7, r * 0.2, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.72, y - r * 0.62, r * 0.16, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.7, y - r * 0.7, r * 0.2, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.72, y - r * 0.62, r * 0.16, 0, Math.PI * 2);
   ctx.fill();
-  // Cheeks
+
+  // ---- BERET HAT (Pompompurin's most iconic feature!) ----
+  // Brim (wide flat brown disc)
+  ctx.fillStyle = _darken(c.cheek || '#a0522d', 0.05);
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.ellipse(x, y - r * 0.72, r * 0.9, r * 0.17, 0, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
+  // Hat dome
+  ctx.fillStyle = _sphereGrad(ctx, x, y - r * 1.06, r * 0.55, c.cheek || '#a0522d');
+  ctx.beginPath();
+  ctx.ellipse(x, y - r * 1.06, r * 0.58, r * 0.44, 0, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
+  // Hat band (white stripe)
+  ctx.fillStyle = 'rgba(255,255,255,0.32)';
+  ctx.beginPath();
+  ctx.ellipse(x, y - r * 0.84, r * 0.72, r * 0.1, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Hat specular
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.beginPath();
+  ctx.ellipse(x - r * 0.18, y - r * 1.18, r * 0.24, r * 0.14, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Rosy cheeks
   ctx.fillStyle = c.cheek;
-  ctx.globalAlpha = 0.5;
+  ctx.globalAlpha = 0.45;
   ctx.beginPath();
-  ctx.arc(x - r * 0.55, y + r * 0.15, r * 0.25, 0, Math.PI * 2);
+  ctx.ellipse(x - r * 0.56, y + r * 0.12, r * 0.24, r * 0.15, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.55, y + r * 0.15, r * 0.25, 0, Math.PI * 2);
+  ctx.ellipse(x + r * 0.56, y + r * 0.12, r * 0.24, r * 0.15, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
-  // Eyes
+
+  // Sleepy droopy eyes (Pompompurin always looks half-asleep/happy)
   ctx.fillStyle = c.eye;
   ctx.beginPath();
-  ctx.arc(x - r * 0.3, y - r * 0.1, r * 0.12, 0, Math.PI * 2);
+  ctx.ellipse(x - r * 0.3, y - r * 0.06, r * 0.13, r * 0.08, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.3, y - r * 0.1, r * 0.12, 0, Math.PI * 2);
+  ctx.ellipse(x + r * 0.3, y - r * 0.06, r * 0.13, r * 0.08, 0, 0, Math.PI * 2);
   ctx.fill();
+  // Droopy eyelid arc above each eye
+  ctx.strokeStyle = c.eye;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(x - r * 0.3, y - r * 0.11, r * 0.16, Math.PI, 0);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x + r * 0.3, y - r * 0.11, r * 0.16, Math.PI, 0);
+  ctx.stroke();
   // Eye shine
   ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.arc(x - r * 0.27, y - r * 0.15, r * 0.05, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.25, y - r * 0.12, r * 0.045, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.33, y - r * 0.15, r * 0.05, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.35, y - r * 0.12, r * 0.045, 0, Math.PI * 2);
   ctx.fill();
-  // Nose
+
+  // Small brown nose
   ctx.fillStyle = c.nose;
   ctx.beginPath();
-  ctx.ellipse(x, y + r * 0.15, r * 0.09, r * 0.07, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y + r * 0.12, r * 0.09, r * 0.07, 0, 0, Math.PI * 2);
   ctx.fill();
-  // Happy smile
+  // Wide happy smile
   ctx.strokeStyle = c.nose;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.arc(x, y + r * 0.22, r * 0.2, 0.1, Math.PI - 0.1);
+  ctx.arc(x, y + r * 0.2, r * 0.22, 0.08, Math.PI - 0.08);
   ctx.stroke();
+
   ctx.restore();
 }
 
-// Cinna-Pup — Cinnamoroll-style dog
+// ============================================================
+// Cinna-Pup — Cinnamoroll-style white puppy
+// ============================================================
 function drawCinnaPup(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
   const r = 14;
-  // Big floppy ears (behind head)
-  ctx.fillStyle = c.ear;
-  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+
+  // Engine glow (top — enemy flies downward)
+  const egC = ctx.createRadialGradient(x, y - r*1.5, 0, x, y - r*2.0, r*0.65);
+  egC.addColorStop(0, 'rgba(160,220,255,0.92)'); egC.addColorStop(0.5, 'rgba(80,160,255,0.5)'); egC.addColorStop(1, 'rgba(40,80,255,0)');
+  ctx.fillStyle = egC; ctx.beginPath(); ctx.ellipse(x, y - r*1.62, r*0.20, r*0.48, 0, 0, Math.PI*2); ctx.fill();
+  // Wings
+  ctx.fillStyle = _darken(c.ear, 0.18); ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x - r*0.50, y - r*0.12); ctx.lineTo(x - r*1.28, y - r*0.46); ctx.lineTo(x - r*1.06, y + r*0.30); ctx.lineTo(x - r*0.42, y + r*0.16); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + r*0.50, y - r*0.12); ctx.lineTo(x + r*1.28, y - r*0.46); ctx.lineTo(x + r*1.06, y + r*0.30); ctx.lineTo(x + r*0.42, y + r*0.16); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Big floppy BLUE ears (hang down — Cinnamoroll's most iconic feature)
+  ctx.fillStyle = _sphereGrad(ctx, x - r*0.98, y + r*0.5, r*0.44, c.ear);
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.ellipse(x - r * 0.95, y + r * 0.5, r * 0.5, r * 0.9, -0.3, 0, Math.PI * 2);
+  ctx.ellipse(x - r * 0.96, y + r * 0.52, r * 0.44, r * 0.88, -0.18, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
+  ctx.fillStyle = _sphereGrad(ctx, x + r*0.98, y + r*0.5, r*0.44, c.ear);
   ctx.beginPath();
-  ctx.ellipse(x + r * 0.95, y + r * 0.5, r * 0.5, r * 0.9, 0.3, 0, Math.PI * 2);
+  ctx.ellipse(x + r * 0.96, y + r * 0.52, r * 0.44, r * 0.88, 0.18, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
-  // Head
-  ctx.fillStyle = c.main;
-  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-  ctx.lineWidth = 1.2;
+  // Ear inner highlights
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
   ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  _addSphereDepth(ctx, x, y, r);
-  // Cheeks
-  ctx.fillStyle = c.cheek;
-  ctx.globalAlpha = 0.5;
-  ctx.beginPath();
-  ctx.arc(x - r * 0.55, y + r * 0.2, r * 0.24, 0, Math.PI * 2);
+  ctx.ellipse(x - r * 1.06, y + r * 0.18, r * 0.18, r * 0.3, -0.18, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.55, y + r * 0.2, r * 0.24, 0, Math.PI * 2);
+  ctx.ellipse(x + r * 0.86, y + r * 0.18, r * 0.18, r * 0.3, 0.18, 0, Math.PI * 2);
+  ctx.fill();
+
+  // White round head
+  _sphere(ctx, x, y, r, c.main, 'rgba(0,0,0,0.28)');
+
+  // Cinnamon roll curly tail on top (small spiral)
+  ctx.strokeStyle = c.ear;
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(x, y - r * 0.95, r * 0.26, Math.PI * 0.85, Math.PI * 2.15);
+  ctx.stroke();
+  // Tail center
+  ctx.fillStyle = c.ear;
+  ctx.beginPath();
+  ctx.arc(x, y - r * 0.95, r * 0.11, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Rosy cheeks
+  ctx.fillStyle = c.cheek;
+  ctx.globalAlpha = 0.45;
+  ctx.beginPath();
+  ctx.ellipse(x - r * 0.55, y + r * 0.22, r * 0.22, r * 0.14, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(x + r * 0.55, y + r * 0.22, r * 0.22, r * 0.14, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
-  // Eyes (large, blue)
-  ctx.fillStyle = c.eye;
-  ctx.beginPath();
-  ctx.arc(x - r * 0.28, y - r * 0.05, r * 0.16, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(x + r * 0.28, y - r * 0.05, r * 0.16, 0, Math.PI * 2);
-  ctx.fill();
+
+  // Large sparkly blue eyes (Cinnamoroll's defining eyes)
+  _sphere(ctx, x - r * 0.28, y - r * 0.05, r * 0.18, c.eye, 'rgba(0,0,0,0.3)');
+  _sphere(ctx, x + r * 0.28, y - r * 0.05, r * 0.18, c.eye, 'rgba(0,0,0,0.3)');
+  // Pupils
   ctx.fillStyle = '#1a1a2e';
   ctx.beginPath();
-  ctx.arc(x - r * 0.28, y - r * 0.05, r * 0.09, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.28, y - r * 0.05, r * 0.1, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.28, y - r * 0.05, r * 0.09, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.28, y - r * 0.05, r * 0.1, 0, Math.PI * 2);
   ctx.fill();
-  // Eye shine
+  // Sparkle (two shine dots per eye)
   ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.arc(x - r * 0.24, y - r * 0.1, r * 0.05, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.22, y - r * 0.11, r * 0.065, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.32, y - r * 0.1, r * 0.05, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.33, y - r * 0.0, r * 0.03, 0, Math.PI * 2);
   ctx.fill();
-  // Nose
+  ctx.beginPath();
+  ctx.arc(x + r * 0.34, y - r * 0.11, r * 0.065, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + r * 0.23, y - r * 0.0, r * 0.03, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Tiny button nose
   ctx.fillStyle = c.nose;
   ctx.beginPath();
-  ctx.ellipse(x, y + r * 0.18, r * 0.1, r * 0.08, 0, 0, Math.PI * 2);
+  ctx.arc(x, y + r * 0.19, r * 0.08, 0, Math.PI * 2);
   ctx.fill();
-  // Tiny wings
+
+  // Small wings (translucent)
   ctx.fillStyle = c.wing || '#d0e8ff';
-  ctx.globalAlpha = 0.7;
+  ctx.globalAlpha = 0.58;
   ctx.beginPath();
-  ctx.ellipse(x - r * 0.9, y - r * 0.2, r * 0.35, r * 0.2, 0.5, 0, Math.PI * 2);
+  ctx.ellipse(x - r * 0.88, y - r * 0.14, r * 0.32, r * 0.18, 0.5, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.ellipse(x + r * 0.9, y - r * 0.2, r * 0.35, r * 0.2, -0.5, 0, Math.PI * 2);
+  ctx.ellipse(x + r * 0.88, y - r * 0.14, r * 0.32, r * 0.18, -0.5, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
+
   ctx.restore();
 }
 
-// Badtz-Grunt — punk penguin
+// ============================================================
+// Badtz-Grunt — Badtz-Maru-style punk penguin
+// ============================================================
 function drawBadtzGrunt(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
   const r = 13;
-  // Body (penguin body shape)
-  ctx.fillStyle = c.main;
+
+  // Engine glow (top — enemy flies downward)
+  const egB = ctx.createRadialGradient(x, y - r*1.5, 0, x, y - r*2.0, r*0.65);
+  egB.addColorStop(0, 'rgba(255,220,60,0.92)'); egB.addColorStop(0.5, 'rgba(255,140,0,0.48)'); egB.addColorStop(1, 'rgba(255,60,0,0)');
+  ctx.fillStyle = egB; ctx.beginPath(); ctx.ellipse(x, y - r*1.62, r*0.19, r*0.46, 0, 0, Math.PI*2); ctx.fill();
+  // Wings (dark — match Badtz-Maru's black color)
+  ctx.fillStyle = '#2a2a44'; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x - r*0.50, y - r*0.12); ctx.lineTo(x - r*1.28, y - r*0.46); ctx.lineTo(x - r*1.04, y + r*0.28); ctx.lineTo(x - r*0.42, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + r*0.50, y - r*0.12); ctx.lineTo(x + r*1.28, y - r*0.46); ctx.lineTo(x + r*1.04, y + r*0.28); ctx.lineTo(x + r*0.42, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Egg-shaped black body
+  ctx.fillStyle = _sphereGrad(ctx, x, y + r*0.2, r*0.85, c.main);
   ctx.strokeStyle = 'rgba(0,0,0,0.4)';
   ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.arc(x, y + r * 0.1, r * 0.8, 0, Math.PI * 2);
+  ctx.ellipse(x, y + r * 0.15, r * 0.78, r * 0.88, 0, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
-  // White belly
-  ctx.fillStyle = c.belly || '#2d2d4e';
+  // Pale belly
+  ctx.fillStyle = _lighten(c.belly || '#2d2d4e', 0.75);
   ctx.beginPath();
-  ctx.ellipse(x, y + r * 0.3, r * 0.45, r * 0.6, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y + r * 0.35, r * 0.44, r * 0.58, 0, 0, Math.PI * 2);
   ctx.fill();
+
   // Head
-  ctx.fillStyle = c.main;
-  ctx.beginPath();
-  ctx.arc(x, y - r * 0.45, r * 0.75, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  _addSphereDepth(ctx, x, y - r * 0.45, r * 0.75);
-  // Spiky hair
+  _sphere(ctx, x, y - r * 0.46, r * 0.76, c.main, 'rgba(0,0,0,0.4)');
+
+  // ---- Spiky hair (4 dramatic spikes — Badtz-Maru's signature) ----
   ctx.fillStyle = '#000022';
-  for (let i = -1; i <= 1; i++) {
+  const spikes = [-1.6, -0.52, 0.52, 1.6];
+  for (const off of spikes) {
     ctx.beginPath();
-    ctx.moveTo(x + i * r * 0.3, y - r * 1.1);
-    ctx.lineTo(x + i * r * 0.5 - r * 0.1, y - r * 1.65);
-    ctx.lineTo(x + i * r * 0.5 + r * 0.1, y - r * 1.65);
+    ctx.moveTo(x + off * r * 0.2 - r * 0.1, y - r * 1.1);
+    ctx.lineTo(x + off * r * 0.2,            y - r * 1.72);
+    ctx.lineTo(x + off * r * 0.2 + r * 0.1,  y - r * 1.1);
     ctx.closePath();
     ctx.fill();
   }
-  // Eyes (white with dot pupils)
-  ctx.fillStyle = c.eye;
+
+  // Angry angled eyebrows (important for the grumpy look)
+  ctx.strokeStyle = '#000022';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.arc(x - r * 0.28, y - r * 0.55, r * 0.16, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.moveTo(x - r * 0.46, y - r * 0.74);
+  ctx.lineTo(x - r * 0.14, y - r * 0.66);
+  ctx.stroke();
   ctx.beginPath();
-  ctx.arc(x + r * 0.28, y - r * 0.55, r * 0.16, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.moveTo(x + r * 0.14, y - r * 0.66);
+  ctx.lineTo(x + r * 0.46, y - r * 0.74);
+  ctx.stroke();
+
+  // Large oval white eyes
+  _sphere(ctx, x - r * 0.28, y - r * 0.5, r * 0.17, c.eye, 'rgba(0,0,0,0.4)');
+  _sphere(ctx, x + r * 0.28, y - r * 0.5, r * 0.17, c.eye, 'rgba(0,0,0,0.4)');
+  // Small pupils (grumpy small-pupil look)
   ctx.fillStyle = c.pupil;
   ctx.beginPath();
-  ctx.arc(x - r * 0.26, y - r * 0.53, r * 0.09, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.26, y - r * 0.48, r * 0.09, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.3, y - r * 0.53, r * 0.09, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.30, y - r * 0.48, r * 0.09, 0, Math.PI * 2);
   ctx.fill();
-  // Beak
+  // Eye shine
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(x - r * 0.22, y - r * 0.55, r * 0.045, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + r * 0.34, y - r * 0.55, r * 0.045, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Diamond-shaped yellow beak
   ctx.fillStyle = c.beak;
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 0.8;
   ctx.beginPath();
-  ctx.moveTo(x - r * 0.12, y - r * 0.35);
-  ctx.lineTo(x + r * 0.12, y - r * 0.35);
-  ctx.lineTo(x, y - r * 0.12);
+  ctx.moveTo(x,           y - r * 0.38);
+  ctx.lineTo(x - r * 0.16, y - r * 0.28);
+  ctx.lineTo(x,            y - r * 0.18);
+  ctx.lineTo(x + r * 0.16, y - r * 0.28);
   ctx.closePath();
-  ctx.fill();
+  ctx.fill(); ctx.stroke();
+
   ctx.restore();
 }
 
-// Melody Bunny — My Melody-style
+// ============================================================
+// Melody Bunny — My Melody-style bunny in pink hood
+// ============================================================
 function drawMelodyBunny(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
   const r = 14;
-  // Bunny ears (peeking out of hood)
-  ctx.fillStyle = c.ear;
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+
+  // Engine glow (top — enemy flies downward)
+  const egM = ctx.createRadialGradient(x, y - r*1.5, 0, x, y - r*2.1, r*0.68);
+  egM.addColorStop(0, 'rgba(255,180,230,0.92)'); egM.addColorStop(0.5, 'rgba(255,100,200,0.5)'); egM.addColorStop(1, 'rgba(200,0,150,0)');
+  ctx.fillStyle = egM; ctx.beginPath(); ctx.ellipse(x, y - r*1.65, r*0.21, r*0.50, 0, 0, Math.PI*2); ctx.fill();
+  // Wings (pink to match hood)
+  ctx.fillStyle = _darken(c.hood, 0.14); ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x - r*0.52, y - r*0.14); ctx.lineTo(x - r*1.30, y - r*0.48); ctx.lineTo(x - r*1.08, y + r*0.28); ctx.lineTo(x - r*0.44, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + r*0.52, y - r*0.14); ctx.lineTo(x + r*1.30, y - r*0.48); ctx.lineTo(x + r*1.08, y + r*0.28); ctx.lineTo(x + r*0.44, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Tall bunny ears peek from top of hood
+  ctx.fillStyle = _sphereGrad(ctx, x - r*0.36, y - r*1.38, r*0.21, c.ear);
+  ctx.strokeStyle = 'rgba(0,0,0,0.28)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.ellipse(x - r * 0.35, y - r * 1.35, r * 0.2, r * 0.55, -0.15, 0, Math.PI * 2);
+  ctx.ellipse(x - r * 0.36, y - r * 1.35, r * 0.21, r * 0.58, -0.1, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
+  ctx.fillStyle = _sphereGrad(ctx, x + r*0.36, y - r*1.38, r*0.21, c.ear);
   ctx.beginPath();
-  ctx.ellipse(x + r * 0.35, y - r * 1.35, r * 0.2, r * 0.55, 0.15, 0, Math.PI * 2);
+  ctx.ellipse(x + r * 0.36, y - r * 1.35, r * 0.21, r * 0.58, 0.1, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
-  // Inner ears
+  // Inner ear (pink)
   ctx.fillStyle = c.hoodInner || '#ffb6c1';
   ctx.beginPath();
-  ctx.ellipse(x - r * 0.35, y - r * 1.35, r * 0.1, r * 0.38, -0.15, 0, Math.PI * 2);
+  ctx.ellipse(x - r * 0.36, y - r * 1.35, r * 0.1, r * 0.4, -0.1, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.ellipse(x + r * 0.35, y - r * 1.35, r * 0.1, r * 0.38, 0.15, 0, Math.PI * 2);
+  ctx.ellipse(x + r * 0.36, y - r * 1.35, r * 0.1, r * 0.4, 0.1, 0, Math.PI * 2);
   ctx.fill();
-  // Hood
-  ctx.fillStyle = c.hood;
+
+  // Pink hood (My Melody's defining feature — big rounded pink dome)
+  ctx.fillStyle = _sphereGrad(ctx, x, y - r*0.32, r, c.hood);
+  ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+  ctx.lineWidth = 1.2;
   ctx.beginPath();
   ctx.arc(x, y, r, Math.PI, 0, false);
-  ctx.lineTo(x + r * 1.1, y + r * 0.3);
-  ctx.arc(x, y + r * 0.3, r * 1.1, 0, Math.PI, false);
+  ctx.lineTo(x + r * 1.1, y + r * 0.35);
+  ctx.arc(x, y + r * 0.35, r * 1.1, 0, Math.PI, false);
   ctx.closePath();
   ctx.fill(); ctx.stroke();
-  // Face circle inside hood
-  ctx.fillStyle = c.main;
+  // Hood specular
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
   ctx.beginPath();
-  ctx.arc(x, y + r * 0.1, r * 0.78, 0, Math.PI * 2);
+  ctx.ellipse(x - r * 0.28, y - r * 0.5, r * 0.32, r * 0.18, -0.3, 0, Math.PI * 2);
   ctx.fill();
-  _addSphereDepth(ctx, x, y + r * 0.1, r * 0.78);
-  // Eyes
+  // Hood inner edge (white lining visible at bottom)
+  ctx.fillStyle = c.hoodInner || '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(x, y + r * 0.1, r * 0.58, r * 0.14, 0, 0, Math.PI);
+  ctx.fill();
+
+  // White face inside hood
+  _sphere(ctx, x, y + r * 0.1, r * 0.76, c.main, 'rgba(0,0,0,0.18)');
+
+  // Small black dot eyes
   ctx.fillStyle = c.eye;
   ctx.beginPath();
-  ctx.arc(x - r * 0.25, y, r * 0.1, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.24, y + r * 0.05, r * 0.1, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.25, y, r * 0.1, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.24, y + r * 0.05, r * 0.1, 0, Math.PI * 2);
   ctx.fill();
-  // Nose/mouth
+  // Eye shine
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.beginPath();
+  ctx.arc(x - r * 0.21, y + r * 0.01, r * 0.035, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + r * 0.27, y + r * 0.01, r * 0.035, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Small triangle nose
   ctx.fillStyle = '#ff69b4';
   ctx.beginPath();
-  ctx.arc(x, y + r * 0.22, r * 0.07, 0, Math.PI * 2);
+  ctx.moveTo(x,           y + r * 0.22);
+  ctx.lineTo(x - r * 0.07, y + r * 0.16);
+  ctx.lineTo(x + r * 0.07, y + r * 0.16);
+  ctx.closePath();
   ctx.fill();
+
+  // Pink flower on hood (My Melody's detail)
+  const fx = x + r * 0.66, fy = y - r * 0.28;
+  const fr = r * 0.1;
+  ctx.fillStyle = c.flower || '#ff0000';
+  for (let i = 0; i < 5; i++) {
+    const ang = (i / 5) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(fx + Math.cos(ang) * fr * 1.2, fy + Math.sin(ang) * fr * 1.2, fr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = c.flowerCenter || '#ffd700';
+  ctx.beginPath();
+  ctx.arc(fx, fy, fr * 0.72, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.restore();
 }
 
-// Keroppi — frog
+// ============================================================
+// Keroppi — giant-eyed frog
+// ============================================================
 function drawKeroppi(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
   const r = 13;
-  // Big dome head
-  ctx.fillStyle = c.main;
-  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  _addSphereDepth(ctx, x, y, r);
-  // Lighter belly area
+
+  // Engine glow (top — enemy flies downward)
+  const egK = ctx.createRadialGradient(x, y - r*1.4, 0, x, y - r*1.9, r*0.62);
+  egK.addColorStop(0, 'rgba(120,255,120,0.90)'); egK.addColorStop(0.5, 'rgba(60,200,60,0.48)'); egK.addColorStop(1, 'rgba(0,120,0,0)');
+  ctx.fillStyle = egK; ctx.beginPath(); ctx.ellipse(x, y - r*1.52, r*0.19, r*0.44, 0, 0, Math.PI*2); ctx.fill();
+  // Wings (green to match frog)
+  ctx.fillStyle = _darken(c.main, 0.22); ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x - r*0.50, y - r*0.10); ctx.lineTo(x - r*1.26, y - r*0.44); ctx.lineTo(x - r*1.04, y + r*0.28); ctx.lineTo(x - r*0.42, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + r*0.50, y - r*0.10); ctx.lineTo(x + r*1.26, y - r*0.44); ctx.lineTo(x + r*1.04, y + r*0.28); ctx.lineTo(x + r*0.42, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Round green head
+  _sphere(ctx, x, y, r, c.main, 'rgba(0,0,0,0.35)');
+
+  // Lighter belly/chin area
   ctx.fillStyle = c.belly;
   ctx.beginPath();
-  ctx.ellipse(x, y + r * 0.35, r * 0.65, r * 0.6, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y + r * 0.36, r * 0.62, r * 0.56, 0, 0, Math.PI * 2);
   ctx.fill();
-  // Big goggle eyes on top
-  ctx.fillStyle = c.eyeWhite;
-  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-  ctx.beginPath();
-  ctx.arc(x - r * 0.4, y - r * 0.65, r * 0.32, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(x + r * 0.4, y - r * 0.65, r * 0.32, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
+
+  // ---- HUGE goggle eyes on TOP of head (Keroppi's most iconic feature) ----
+  _sphere(ctx, x - r * 0.43, y - r * 0.68, r * 0.35, c.eyeWhite, 'rgba(0,0,0,0.35)');
+  _sphere(ctx, x + r * 0.43, y - r * 0.68, r * 0.35, c.eyeWhite, 'rgba(0,0,0,0.35)');
+  // Pupils
   ctx.fillStyle = c.pupil;
   ctx.beginPath();
-  ctx.arc(x - r * 0.38, y - r * 0.63, r * 0.18, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.41, y - r * 0.66, r * 0.21, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.42, y - r * 0.63, r * 0.18, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.45, y - r * 0.66, r * 0.21, 0, Math.PI * 2);
   ctx.fill();
   // Eye shine
   ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.arc(x - r * 0.33, y - r * 0.7, r * 0.07, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.34, y - r * 0.74, r * 0.09, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.47, y - r * 0.7, r * 0.07, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.52, y - r * 0.74, r * 0.09, 0, Math.PI * 2);
   ctx.fill();
-  // Mouth
+
+  // Wide happy frog grin (Keroppi always grins)
   ctx.strokeStyle = c.mouth;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(x, y + r * 0.3, r * 0.45, 0.15, Math.PI - 0.15);
+  ctx.arc(x, y + r * 0.3, r * 0.48, 0.08, Math.PI - 0.08);
   ctx.stroke();
+  // Upturned grin corners
+  ctx.beginPath();
+  ctx.arc(x - r * 0.47, y + r * 0.3, r * 0.09, Math.PI * 0.5, Math.PI);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x + r * 0.47, y + r * 0.3, r * 0.09, 0, Math.PI * 0.5);
+  ctx.stroke();
+
   ctx.restore();
 }
 
-// Tuxedo Sam — formal penguin
+// ============================================================
+// Tuxedo Sam — formal blue penguin
+// ============================================================
 function drawTuxedoSam(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
   const r = 13;
-  // Body
-  ctx.fillStyle = c.main;
-  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+
+  // Engine glow (top — enemy flies downward)
+  const egS = ctx.createRadialGradient(x, y - r*1.5, 0, x, y - r*2.0, r*0.65);
+  egS.addColorStop(0, 'rgba(100,180,255,0.92)'); egS.addColorStop(0.5, 'rgba(40,100,220,0.5)'); egS.addColorStop(1, 'rgba(0,40,180,0)');
+  ctx.fillStyle = egS; ctx.beginPath(); ctx.ellipse(x, y - r*1.62, r*0.20, r*0.48, 0, 0, Math.PI*2); ctx.fill();
+  // Wings (blue to match tuxedo)
+  ctx.fillStyle = _darken(c.main, 0.18); ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x - r*0.50, y - r*0.12); ctx.lineTo(x - r*1.28, y - r*0.46); ctx.lineTo(x - r*1.06, y + r*0.30); ctx.lineTo(x - r*0.42, y + r*0.16); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + r*0.50, y - r*0.12); ctx.lineTo(x + r*1.28, y - r*0.46); ctx.lineTo(x + r*1.06, y + r*0.30); ctx.lineTo(x + r*0.42, y + r*0.16); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Blue body (formal penguin shape)
+  ctx.fillStyle = _sphereGrad(ctx, x, y + r*0.28, r*0.85, c.main);
+  ctx.strokeStyle = 'rgba(0,0,0,0.38)';
   ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.ellipse(x, y + r * 0.25, r * 0.8, r * 0.9, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y + r * 0.28, r * 0.78, r * 0.88, 0, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
   // White belly
-  ctx.fillStyle = c.belly;
+  ctx.fillStyle = _sphereGrad(ctx, x, y + r*0.45, r*0.5, c.belly);
   ctx.beginPath();
-  ctx.ellipse(x, y + r * 0.4, r * 0.45, r * 0.65, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y + r * 0.44, r * 0.46, r * 0.64, 0, 0, Math.PI * 2);
   ctx.fill();
-  // Bowtie
+
+  // Red bowtie (prominent, Tuxedo Sam's signature)
   ctx.fillStyle = c.bowtie;
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 0.8;
+  // Left wing of bow
   ctx.beginPath();
-  ctx.moveTo(x - r * 0.22, y + r * 0.05);
-  ctx.lineTo(x, y + r * 0.15);
-  ctx.lineTo(x - r * 0.22, y + r * 0.25);
+  ctx.moveTo(x,            y + r * 0.08);
+  ctx.lineTo(x - r * 0.24, y + r * 0.0);
+  ctx.lineTo(x - r * 0.26, y + r * 0.22);
   ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(x + r * 0.22, y + r * 0.05);
-  ctx.lineTo(x, y + r * 0.15);
-  ctx.lineTo(x + r * 0.22, y + r * 0.25);
-  ctx.closePath();
-  ctx.fill();
-  // Head
-  ctx.fillStyle = c.main;
-  ctx.beginPath();
-  ctx.arc(x, y - r * 0.6, r * 0.7, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
-  _addSphereDepth(ctx, x, y - r * 0.6, r * 0.7);
-  // Beak
-  ctx.fillStyle = c.beak;
+  // Right wing of bow
   ctx.beginPath();
-  ctx.moveTo(x - r * 0.15, y - r * 0.5);
-  ctx.lineTo(x + r * 0.15, y - r * 0.5);
-  ctx.lineTo(x, y - r * 0.28);
+  ctx.moveTo(x,            y + r * 0.08);
+  ctx.lineTo(x + r * 0.24, y + r * 0.0);
+  ctx.lineTo(x + r * 0.26, y + r * 0.22);
   ctx.closePath();
-  ctx.fill();
-  // Eyes
-  ctx.fillStyle = c.eye;
+  ctx.fill(); ctx.stroke();
+  // Bowtie knot
+  ctx.fillStyle = _darken(c.bowtie, 0.18);
   ctx.beginPath();
-  ctx.arc(x - r * 0.28, y - r * 0.72, r * 0.14, 0, Math.PI * 2);
+  ctx.arc(x, y + r * 0.11, r * 0.07, 0, Math.PI * 2);
   ctx.fill();
+
+  // Round blue head
+  _sphere(ctx, x, y - r * 0.62, r * 0.72, c.main, 'rgba(0,0,0,0.35)');
+
+  // Orange beak (triangle)
+  ctx.fillStyle = c.beak;
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 0.8;
   ctx.beginPath();
-  ctx.arc(x + r * 0.28, y - r * 0.72, r * 0.14, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.moveTo(x,            y - r * 0.48);
+  ctx.lineTo(x - r * 0.14, y - r * 0.38);
+  ctx.lineTo(x + r * 0.14, y - r * 0.38);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // Eyes (white circles with dark pupils)
+  _sphere(ctx, x - r * 0.28, y - r * 0.72, r * 0.15, c.eye, 'rgba(0,0,0,0.3)');
+  _sphere(ctx, x + r * 0.28, y - r * 0.72, r * 0.15, c.eye, 'rgba(0,0,0,0.3)');
   ctx.fillStyle = c.pupil;
   ctx.beginPath();
   ctx.arc(x - r * 0.27, y - r * 0.71, r * 0.08, 0, Math.PI * 2);
@@ -597,81 +851,100 @@ function drawTuxedoSam(ctx, cx, cy, s, c) {
   ctx.beginPath();
   ctx.arc(x + r * 0.29, y - r * 0.71, r * 0.08, 0, Math.PI * 2);
   ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(x - r * 0.23, y - r * 0.76, r * 0.04, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + r * 0.33, y - r * 0.76, r * 0.04, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.restore();
 }
 
-// Chococat — black cat
+// ============================================================
+// Chococat — black cat with huge chocolate nose
+// ============================================================
 function drawChococat(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
   const r = 13;
-  // Head
-  ctx.fillStyle = c.main;
-  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+
+  // Engine glow (top — enemy flies downward)
+  const egCh = ctx.createRadialGradient(x, y - r*1.4, 0, x, y - r*1.9, r*0.62);
+  egCh.addColorStop(0, 'rgba(180,120,60,0.92)'); egCh.addColorStop(0.5, 'rgba(120,70,20,0.5)'); egCh.addColorStop(1, 'rgba(60,20,0,0)');
+  ctx.fillStyle = egCh; ctx.beginPath(); ctx.ellipse(x, y - r*1.52, r*0.19, r*0.44, 0, 0, Math.PI*2); ctx.fill();
+  // Wings (dark chocolate tones)
+  ctx.fillStyle = '#2a1800'; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x - r*0.50, y - r*0.10); ctx.lineTo(x - r*1.26, y - r*0.44); ctx.lineTo(x - r*1.04, y + r*0.28); ctx.lineTo(x - r*0.42, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + r*0.50, y - r*0.10); ctx.lineTo(x + r*1.26, y - r*0.44); ctx.lineTo(x + r*1.04, y + r*0.28); ctx.lineTo(x + r*0.42, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Black head
+  _sphere(ctx, x, y, r, c.main, 'rgba(0,0,0,0.5)');
+
+  // Cat ears
+  ctx.fillStyle = _sphereGrad(ctx, x - r*0.6, y - r*0.95, r*0.32, c.main);
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
   ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  _addSphereDepth(ctx, x, y, r);
-  // Ears
-  ctx.beginPath();
-  ctx.moveTo(x - r * 0.5, y - r * 0.72);
-  ctx.lineTo(x - r * 0.82, y - r * 1.3);
-  ctx.lineTo(x - r * 0.18, y - r * 1.05);
+  ctx.moveTo(x - r * 0.5,  y - r * 0.72);
+  ctx.lineTo(x - r * 0.82, y - r * 1.32);
+  ctx.lineTo(x - r * 0.18, y - r * 1.06);
   ctx.closePath();
   ctx.fill(); ctx.stroke();
+  ctx.fillStyle = _sphereGrad(ctx, x + r*0.6, y - r*0.95, r*0.32, c.main);
   ctx.beginPath();
-  ctx.moveTo(x + r * 0.5, y - r * 0.72);
-  ctx.lineTo(x + r * 0.82, y - r * 1.3);
-  ctx.lineTo(x + r * 0.18, y - r * 1.05);
+  ctx.moveTo(x + r * 0.5,  y - r * 0.72);
+  ctx.lineTo(x + r * 0.82, y - r * 1.32);
+  ctx.lineTo(x + r * 0.18, y - r * 1.06);
   ctx.closePath();
   ctx.fill(); ctx.stroke();
   // Inner ears
   ctx.fillStyle = c.innerEar;
   ctx.beginPath();
-  ctx.moveTo(x - r * 0.5, y - r * 0.76);
-  ctx.lineTo(x - r * 0.74, y - r * 1.2);
+  ctx.moveTo(x - r * 0.5,  y - r * 0.76);
+  ctx.lineTo(x - r * 0.74, y - r * 1.22);
   ctx.lineTo(x - r * 0.24, y - r * 1.0);
   ctx.closePath();
   ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(x + r * 0.5, y - r * 0.76);
-  ctx.lineTo(x + r * 0.74, y - r * 1.2);
+  ctx.moveTo(x + r * 0.5,  y - r * 0.76);
+  ctx.lineTo(x + r * 0.74, y - r * 1.22);
   ctx.lineTo(x + r * 0.24, y - r * 1.0);
   ctx.closePath();
   ctx.fill();
-  // Big nose dot
-  ctx.fillStyle = c.nose;
+
+  // ---- BIG chocolate oval nose (Chococat's #1 defining feature) ----
+  _sphere(ctx, x, y + r * 0.06, r * 0.24, c.nose, 'rgba(0,0,0,0.3)');
+
+  // Small simple dot eyes (above the big nose)
+  ctx.fillStyle = '#3a3a3a';
   ctx.beginPath();
-  ctx.ellipse(x, y + r * 0.05, r * 0.18, r * 0.14, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // Eyes (large ovals)
-  ctx.fillStyle = c.eye;
-  ctx.beginPath();
-  ctx.arc(x - r * 0.3, y - r * 0.18, r * 0.13, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.3, y - r * 0.22, r * 0.11, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.3, y - r * 0.18, r * 0.13, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.3, y - r * 0.22, r * 0.11, 0, Math.PI * 2);
   ctx.fill();
-  // Shine
   ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.arc(x - r * 0.26, y - r * 0.22, r * 0.05, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.26, y - r * 0.26, r * 0.04, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + r * 0.34, y - r * 0.22, r * 0.05, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.34, y - r * 0.26, r * 0.04, 0, Math.PI * 2);
   ctx.fill();
+
   // Whiskers
-  ctx.strokeStyle = c.whisker;
+  ctx.strokeStyle = c.whisker || '#888';
   ctx.lineWidth = 0.8;
   for (let i = -1; i <= 1; i++) {
-    const wy = y + r * 0.15 + i * r * 0.12;
+    const wy = y + r * 0.12 + i * r * 0.12;
     ctx.beginPath();
-    ctx.moveTo(x - r * 0.22, wy); ctx.lineTo(x - r * 0.85, wy); ctx.stroke();
+    ctx.moveTo(x - r * 0.22, wy); ctx.lineTo(x - r * 0.88, wy); ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(x + r * 0.22, wy); ctx.lineTo(x + r * 0.85, wy); ctx.stroke();
+    ctx.moveTo(x + r * 0.22, wy); ctx.lineTo(x + r * 0.88, wy); ctx.stroke();
   }
+
   ctx.restore();
 }
 
@@ -682,7 +955,7 @@ function drawChococat(ctx, cx, cy, s, c) {
 function drawBoss(ctx, boss) {
   const cx = boss.x + boss.width / 2;
   const cy = boss.y + boss.height / 2;
-  const s = boss.width / 100;  // scale factor
+  const s = boss.width / 100;
   const c = boss.colors;
   const phase = boss.phase;
 
@@ -727,204 +1000,281 @@ function _drawCrown(ctx, cx, cy, r, color) {
   ctx.lineTo(cx + r, cy);
   ctx.closePath();
   ctx.fill(); ctx.stroke();
-  // Gems on crown
   ctx.fillStyle = '#ff69b4';
   ctx.beginPath();
   ctx.arc(cx, cy - r, r * 0.18, 0, Math.PI * 2);
   ctx.fill();
 }
 
-// Pompompurin boss
+// ============================================================
+// Pompompurin Boss — giant golden pudding pup with beret
+// ============================================================
 function drawPompompurinBoss(ctx, cx, cy, s, c) {
   const r = 36 * s;
-  // Body (big round)
-  ctx.fillStyle = c.main;
-  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+
+  // Boss engine glow (top — 3 vents)
+  for (let vi = -1; vi <= 1; vi++) {
+    const egPP = ctx.createRadialGradient(cx + vi*r*0.38, cy - r*1.5, 0, cx + vi*r*0.38, cy - r*2.1, r*0.62);
+    egPP.addColorStop(0, 'rgba(255,230,60,0.95)'); egPP.addColorStop(0.5, 'rgba(255,160,0,0.5)'); egPP.addColorStop(1, 'rgba(255,80,0,0)');
+    ctx.fillStyle = egPP; ctx.beginPath(); ctx.ellipse(cx + vi*r*0.38, cy - r*1.6, r*0.14, r*0.42, 0, 0, Math.PI*2); ctx.fill();
+  }
+  // Boss wings (large, swept)
+  ctx.fillStyle = _darken(c.main, 0.25); ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx - r*0.58, cy - r*0.18); ctx.lineTo(cx - r*1.72, cy - r*0.62); ctx.lineTo(cx - r*1.48, cy + r*0.52); ctx.lineTo(cx - r*0.5, cy + r*0.28); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + r*0.58, cy - r*0.18); ctx.lineTo(cx + r*1.72, cy - r*0.62); ctx.lineTo(cx + r*1.48, cy + r*0.52); ctx.lineTo(cx + r*0.5, cy + r*0.28); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Big round golden body
+  _sphere(ctx, cx, cy, r, c.main, 'rgba(0,0,0,0.35)');
+
+  // Small round ears
+  _sphere(ctx, cx - r * 0.88, cy - r * 0.28, r * 0.22, c.main, 'rgba(0,0,0,0.28)');
+  _sphere(ctx, cx + r * 0.88, cy - r * 0.28, r * 0.22, c.main, 'rgba(0,0,0,0.28)');
+
+  // ---- Brown beret hat ----
+  // Brim
+  ctx.fillStyle = _darken(c.hatBrim, 0.05);
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy - r * 0.7, r * 0.9, r * 0.18, 0, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
-  _addSphereDepth(ctx, cx, cy, r);
-  // Hat brim
-  ctx.fillStyle = c.hatBrim;
+  // Hat dome with 3D gradient
+  ctx.fillStyle = _sphereGrad(ctx, cx, cy - r*1.07, r*0.56, c.hatTop);
   ctx.beginPath();
-  ctx.ellipse(cx, cy - r * 0.7, r * 0.85, r * 0.18, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy - r * 1.06, r * 0.58, r * 0.44, 0, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
-  // Hat top
-  ctx.fillStyle = c.hatTop;
-  ctx.beginPath();
-  ctx.ellipse(cx, cy - r * 1.05, r * 0.55, r * 0.42, 0, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  // Hat band
+  // Hat band (white stripe)
   ctx.fillStyle = c.hatBand;
   ctx.beginPath();
-  ctx.ellipse(cx, cy - r * 0.82, r * 0.7, r * 0.12, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy - r * 0.84, r * 0.72, r * 0.12, 0, 0, Math.PI * 2);
   ctx.fill();
-  // Ears
-  ctx.fillStyle = c.main;
+  // Hat specular
+  ctx.fillStyle = 'rgba(255,255,255,0.24)';
   ctx.beginPath();
-  ctx.arc(cx - r * 0.85, cy - r * 0.3, r * 0.22, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(cx + r * 0.85, cy - r * 0.3, r * 0.22, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  // Cheeks
+  ctx.ellipse(cx - r * 0.2, cy - r * 1.18, r * 0.26, r * 0.15, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Rosy cheeks
   ctx.fillStyle = c.cheek;
   ctx.globalAlpha = 0.5;
   ctx.beginPath();
-  ctx.arc(cx - r * 0.55, cy + r * 0.15, r * 0.28, 0, Math.PI * 2);
+  ctx.ellipse(cx - r * 0.55, cy + r * 0.13, r * 0.28, r * 0.18, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx + r * 0.55, cy + r * 0.15, r * 0.28, 0, Math.PI * 2);
+  ctx.ellipse(cx + r * 0.55, cy + r * 0.13, r * 0.28, r * 0.18, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
-  // Eyes
+
+  // Sleepy droopy eyes
   ctx.fillStyle = c.eye;
   ctx.beginPath();
-  ctx.arc(cx - r * 0.3, cy - r * 0.05, r * 0.12, 0, Math.PI * 2);
+  ctx.ellipse(cx - r * 0.3, cy - r * 0.06, r * 0.14, r * 0.09, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx + r * 0.3, cy - r * 0.05, r * 0.12, 0, Math.PI * 2);
+  ctx.ellipse(cx + r * 0.3, cy - r * 0.06, r * 0.14, r * 0.09, 0, 0, Math.PI * 2);
   ctx.fill();
+  // Droopy eyelid arcs
+  ctx.strokeStyle = c.eye;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx - r * 0.3, cy - r * 0.12, r * 0.18, Math.PI, 0);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx + r * 0.3, cy - r * 0.12, r * 0.18, Math.PI, 0);
+  ctx.stroke();
+  // Eye shine
   ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.arc(cx - r * 0.27, cy - r * 0.09, r * 0.05, 0, Math.PI * 2);
+  ctx.arc(cx - r * 0.24, cy - r * 0.13, r * 0.06, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx + r * 0.33, cy - r * 0.09, r * 0.05, 0, Math.PI * 2);
+  ctx.arc(cx + r * 0.36, cy - r * 0.13, r * 0.06, 0, Math.PI * 2);
   ctx.fill();
+
   // Nose
   ctx.fillStyle = c.nose;
   ctx.beginPath();
-  ctx.ellipse(cx, cy + r * 0.15, r * 0.1, r * 0.08, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy + r * 0.14, r * 0.1, r * 0.08, 0, 0, Math.PI * 2);
   ctx.fill();
-  // Smile
+  // Wide happy smile
   ctx.strokeStyle = c.nose;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.5;
   ctx.beginPath();
-  ctx.arc(cx, cy + r * 0.22, r * 0.22, 0.1, Math.PI - 0.1);
+  ctx.arc(cx, cy + r * 0.24, r * 0.24, 0.05, Math.PI - 0.05);
   ctx.stroke();
 }
 
-// Cinnamoroll boss
+// ============================================================
+// Cinnamoroll Boss — giant white puppy with enormous blue ears
+// ============================================================
 function drawCinnamorollBoss(ctx, cx, cy, s, c) {
   const r = 38 * s;
-  // Large floppy ears
-  ctx.fillStyle = c.ear;
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.ellipse(cx - r * 0.95, cy + r * 0.4, r * 0.42, r * 0.85, -0.25, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  ctx.beginPath();
-  ctx.ellipse(cx + r * 0.95, cy + r * 0.4, r * 0.42, r * 0.85, 0.25, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  // Inner ears
-  ctx.fillStyle = c.earInner;
-  ctx.beginPath();
-  ctx.ellipse(cx - r * 0.95, cy + r * 0.4, r * 0.22, r * 0.6, -0.25, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(cx + r * 0.95, cy + r * 0.4, r * 0.22, r * 0.6, 0.25, 0, Math.PI * 2);
-  ctx.fill();
-  // Head
-  ctx.fillStyle = c.main;
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+
+  // Boss engine glow (top — 3 vents, blue/white for Cinnamoroll)
+  for (let vi = -1; vi <= 1; vi++) {
+    const egCI = ctx.createRadialGradient(cx + vi*r*0.38, cy - r*1.55, 0, cx + vi*r*0.38, cy - r*2.15, r*0.64);
+    egCI.addColorStop(0, 'rgba(180,230,255,0.96)'); egCI.addColorStop(0.5, 'rgba(80,160,255,0.52)'); egCI.addColorStop(1, 'rgba(0,80,220,0)');
+    ctx.fillStyle = egCI; ctx.beginPath(); ctx.ellipse(cx + vi*r*0.38, cy - r*1.65, r*0.14, r*0.44, 0, 0, Math.PI*2); ctx.fill();
+  }
+  // Boss wings
+  ctx.fillStyle = _darken(c.ear, 0.22); ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx - r*0.58, cy - r*0.18); ctx.lineTo(cx - r*1.74, cy - r*0.64); ctx.lineTo(cx - r*1.50, cy + r*0.52); ctx.lineTo(cx - r*0.5, cy + r*0.28); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + r*0.58, cy - r*0.18); ctx.lineTo(cx + r*1.74, cy - r*0.64); ctx.lineTo(cx + r*1.50, cy + r*0.52); ctx.lineTo(cx + r*0.5, cy + r*0.28); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // ---- Enormous floppy BLUE ears ----
+  ctx.fillStyle = _sphereGrad(ctx, cx - r*0.98, cy + r*0.42, r*0.46, c.ear);
+  ctx.strokeStyle = 'rgba(0,0,0,0.28)';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.ellipse(cx - r * 0.96, cy + r * 0.42, r * 0.45, r * 0.86, -0.22, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
-  _addSphereDepth(ctx, cx, cy, r);
-  // Fluffy tail on top (cinnamon roll)
+  ctx.fillStyle = _sphereGrad(ctx, cx + r*0.98, cy + r*0.42, r*0.46, c.ear);
+  ctx.beginPath();
+  ctx.ellipse(cx + r * 0.96, cy + r * 0.42, r * 0.45, r * 0.86, 0.22, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
+  // Inner ear gradient
+  ctx.fillStyle = c.earInner;
+  ctx.beginPath();
+  ctx.ellipse(cx - r * 0.96, cy + r * 0.42, r * 0.24, r * 0.61, -0.22, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + r * 0.96, cy + r * 0.42, r * 0.24, r * 0.61, 0.22, 0, Math.PI * 2);
+  ctx.fill();
+  // Ear highlights
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.beginPath();
+  ctx.ellipse(cx - r * 1.06, cy + r * 0.1, r * 0.16, r * 0.28, -0.22, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + r * 0.86, cy + r * 0.1, r * 0.16, r * 0.28, 0.22, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Big white round head
+  _sphere(ctx, cx, cy, r, c.main, 'rgba(0,0,0,0.25)');
+
+  // ---- Cinnamon roll tail on top ----
+  ctx.strokeStyle = c.tail;
+  ctx.lineWidth = 4 * s;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(cx, cy - r * 1.04, r * 0.28, Math.PI * 0.82, Math.PI * 2.18);
+  ctx.stroke();
   ctx.fillStyle = c.tail;
   ctx.beginPath();
-  ctx.arc(cx, cy - r * 1.05, r * 0.3, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  // Cheeks
+  ctx.arc(cx, cy - r * 0.82, r * 0.13, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Rosy cheeks
   ctx.fillStyle = c.cheek;
-  ctx.globalAlpha = 0.5;
+  ctx.globalAlpha = 0.45;
   ctx.beginPath();
-  ctx.arc(cx - r * 0.52, cy + r * 0.2, r * 0.26, 0, Math.PI * 2);
+  ctx.ellipse(cx - r * 0.52, cy + r * 0.22, r * 0.26, r * 0.16, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx + r * 0.52, cy + r * 0.2, r * 0.26, 0, Math.PI * 2);
+  ctx.ellipse(cx + r * 0.52, cy + r * 0.22, r * 0.26, r * 0.16, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
-  // Eyes (big blue)
-  ctx.fillStyle = c.eye;
-  ctx.beginPath();
-  ctx.arc(cx - r * 0.27, cy - r * 0.05, r * 0.17, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx + r * 0.27, cy - r * 0.05, r * 0.17, 0, Math.PI * 2);
-  ctx.fill();
+
+  // Big sparkly blue eyes
+  _sphere(ctx, cx - r * 0.27, cy - r * 0.05, r * 0.19, c.eye, 'rgba(0,0,0,0.28)');
+  _sphere(ctx, cx + r * 0.27, cy - r * 0.05, r * 0.19, c.eye, 'rgba(0,0,0,0.28)');
   ctx.fillStyle = c.pupil;
   ctx.beginPath();
-  ctx.arc(cx - r * 0.27, cy - r * 0.05, r * 0.1, 0, Math.PI * 2);
+  ctx.arc(cx - r * 0.27, cy - r * 0.05, r * 0.11, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx + r * 0.27, cy - r * 0.05, r * 0.1, 0, Math.PI * 2);
+  ctx.arc(cx + r * 0.27, cy - r * 0.05, r * 0.11, 0, Math.PI * 2);
   ctx.fill();
+  // Sparkle highlights (two dots per eye)
   ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.arc(cx - r * 0.23, cy - r * 0.1, r * 0.055, 0, Math.PI * 2);
+  ctx.arc(cx - r * 0.21, cy - r * 0.12, r * 0.07, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx + r * 0.31, cy - r * 0.1, r * 0.055, 0, Math.PI * 2);
+  ctx.arc(cx - r * 0.32, cy - r * 0.01, r * 0.033, 0, Math.PI * 2);
   ctx.fill();
-  // Nose
+  ctx.beginPath();
+  ctx.arc(cx + r * 0.33, cy - r * 0.12, r * 0.07, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + r * 0.22, cy - r * 0.01, r * 0.033, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Small button nose
   ctx.fillStyle = '#ffb6c1';
   ctx.beginPath();
-  ctx.ellipse(cx, cy + r * 0.18, r * 0.1, r * 0.075, 0, 0, Math.PI * 2);
+  ctx.arc(cx, cy + r * 0.18, r * 0.1, 0, Math.PI * 2);
   ctx.fill();
-  // Curly tail below
+
+  // Curly tail below (cinnamon swirl)
   ctx.strokeStyle = c.tail;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 3 * s;
   ctx.beginPath();
-  ctx.arc(cx + r * 0.6, cy + r * 0.85, r * 0.28, Math.PI, 0);
+  ctx.arc(cx + r * 0.6, cy + r * 0.88, r * 0.28, Math.PI, 0);
   ctx.stroke();
 }
 
-// My Melody boss
+// ============================================================
+// My Melody Boss — giant pink-hooded bunny
+// ============================================================
 function drawMyMelodyBoss(ctx, cx, cy, s, c) {
   const r = 37 * s;
-  // Bunny ears
-  ctx.fillStyle = c.ear;
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+
+  // Boss engine glow (top — 3 vents, pink for My Melody)
+  for (let vi = -1; vi <= 1; vi++) {
+    const egMM = ctx.createRadialGradient(cx + vi*r*0.36, cy - r*1.52, 0, cx + vi*r*0.36, cy - r*2.10, r*0.62);
+    egMM.addColorStop(0, 'rgba(255,180,240,0.95)'); egMM.addColorStop(0.5, 'rgba(255,80,200,0.52)'); egMM.addColorStop(1, 'rgba(200,0,150,0)');
+    ctx.fillStyle = egMM; ctx.beginPath(); ctx.ellipse(cx + vi*r*0.36, cy - r*1.62, r*0.13, r*0.42, 0, 0, Math.PI*2); ctx.fill();
+  }
+  // Boss wings (pink)
+  ctx.fillStyle = _darken(c.hood, 0.18); ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx - r*0.56, cy - r*0.16); ctx.lineTo(cx - r*1.70, cy - r*0.60); ctx.lineTo(cx - r*1.46, cy + r*0.50); ctx.lineTo(cx - r*0.48, cy + r*0.26); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + r*0.56, cy - r*0.16); ctx.lineTo(cx + r*1.70, cy - r*0.60); ctx.lineTo(cx + r*1.46, cy + r*0.50); ctx.lineTo(cx + r*0.48, cy + r*0.26); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Tall bunny ears peek from top of hood
+  ctx.fillStyle = _sphereGrad(ctx, cx - r*0.38, cy - r*1.42, r*0.22, c.ear);
+  ctx.strokeStyle = 'rgba(0,0,0,0.28)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.ellipse(cx - r * 0.38, cy - r * 1.4, r * 0.22, r * 0.6, -0.1, 0, Math.PI * 2);
+  ctx.ellipse(cx - r * 0.38, cy - r * 1.4, r * 0.22, r * 0.62, -0.1, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
+  ctx.fillStyle = _sphereGrad(ctx, cx + r*0.38, cy - r*1.42, r*0.22, c.ear);
   ctx.beginPath();
-  ctx.ellipse(cx + r * 0.38, cy - r * 1.4, r * 0.22, r * 0.6, 0.1, 0, Math.PI * 2);
+  ctx.ellipse(cx + r * 0.38, cy - r * 1.4, r * 0.22, r * 0.62, 0.1, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
-  // Inner ears (pink)
+  // Inner ears
   ctx.fillStyle = c.hoodInner || '#ffb6c1';
   ctx.beginPath();
-  ctx.ellipse(cx - r * 0.38, cy - r * 1.4, r * 0.12, r * 0.42, -0.1, 0, Math.PI * 2);
+  ctx.ellipse(cx - r * 0.38, cy - r * 1.4, r * 0.11, r * 0.44, -0.1, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.ellipse(cx + r * 0.38, cy - r * 1.4, r * 0.12, r * 0.42, 0.1, 0, Math.PI * 2);
+  ctx.ellipse(cx + r * 0.38, cy - r * 1.4, r * 0.11, r * 0.44, 0.1, 0, Math.PI * 2);
   ctx.fill();
-  // Hood (big pink dome)
-  ctx.fillStyle = c.hood;
+
+  // Pink hood (big dome with gradient)
+  ctx.fillStyle = _sphereGrad(ctx, cx, cy - r*0.35, r, c.hood);
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(cx, cy, r, Math.PI, 0, false);
   ctx.bezierCurveTo(cx + r * 1.05, cy + r * 0.2, cx + r * 0.8, cy + r * 0.5, cx, cy + r * 0.3);
   ctx.bezierCurveTo(cx - r * 0.8, cy + r * 0.5, cx - r * 1.05, cy + r * 0.2, cx - r, cy);
   ctx.closePath();
   ctx.fill(); ctx.stroke();
-  // Hood bottom line
+  // Hood specular
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.beginPath();
+  ctx.ellipse(cx - r * 0.3, cy - r * 0.52, r * 0.35, r * 0.2, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  // Hood inner edge (white lining)
   ctx.fillStyle = c.hoodInner;
   ctx.beginPath();
-  ctx.ellipse(cx, cy + r * 0.05, r * 0.55, r * 0.15, 0, 0, Math.PI);
+  ctx.ellipse(cx, cy + r * 0.06, r * 0.55, r * 0.15, 0, 0, Math.PI);
   ctx.fill();
+
   // Face
-  ctx.fillStyle = c.main;
-  ctx.beginPath();
-  ctx.arc(cx, cy + r * 0.1, r * 0.72, 0, Math.PI * 2);
-  ctx.fill();
-  _addSphereDepth(ctx, cx, cy + r * 0.1, r * 0.72);
+  _sphere(ctx, cx, cy + r * 0.1, r * 0.72, c.main, 'rgba(0,0,0,0.2)');
+
   // Eyes
   ctx.fillStyle = c.eye;
   ctx.beginPath();
@@ -933,98 +1283,167 @@ function drawMyMelodyBoss(ctx, cx, cy, s, c) {
   ctx.beginPath();
   ctx.arc(cx + r * 0.24, cy + r * 0.05, r * 0.11, 0, Math.PI * 2);
   ctx.fill();
-  // Nose
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(cx - r * 0.21, cy + r * 0.01, r * 0.04, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + r * 0.27, cy + r * 0.01, r * 0.04, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Small triangle nose
   ctx.fillStyle = '#ff69b4';
   ctx.beginPath();
-  ctx.arc(cx, cy + r * 0.22, r * 0.07, 0, Math.PI * 2);
+  ctx.moveTo(cx,            cy + r * 0.22);
+  ctx.lineTo(cx - r * 0.07, cy + r * 0.16);
+  ctx.lineTo(cx + r * 0.07, cy + r * 0.16);
+  ctx.closePath();
   ctx.fill();
-  // Little flower on hood
+
+  // Flower on hood
   const fx = cx + r * 0.7, fy = cy - r * 0.3;
+  const fr = r * 0.1;
   ctx.fillStyle = c.flower;
   for (let i = 0; i < 5; i++) {
     const ang = (i / 5) * Math.PI * 2;
     ctx.beginPath();
-    ctx.arc(fx + Math.cos(ang) * r * 0.12, fy + Math.sin(ang) * r * 0.12, r * 0.1, 0, Math.PI * 2);
+    ctx.arc(fx + Math.cos(ang) * fr * 1.2, fy + Math.sin(ang) * fr * 1.2, fr, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.fillStyle = c.flowerCenter;
   ctx.beginPath();
-  ctx.arc(fx, fy, r * 0.08, 0, Math.PI * 2);
+  ctx.arc(fx, fy, fr * 0.8, 0, Math.PI * 2);
   ctx.fill();
 }
 
-// Badtz-Maru boss
+// ============================================================
+// Badtz-Maru Boss — giant grumpy punk penguin with crown
+// ============================================================
 function drawBadtzMaruBoss(ctx, cx, cy, s, c) {
   const r = 36 * s;
-  // Body
-  ctx.fillStyle = c.main;
+
+  // Boss engine glow (top — 3 vents, fierce orange/red for Badtz-Maru)
+  for (let vi = -1; vi <= 1; vi++) {
+    const egBM = ctx.createRadialGradient(cx + vi*r*0.38, cy - r*1.55, 0, cx + vi*r*0.38, cy - r*2.18, r*0.65);
+    egBM.addColorStop(0, 'rgba(255,120,0,0.95)'); egBM.addColorStop(0.5, 'rgba(200,40,0,0.55)'); egBM.addColorStop(1, 'rgba(100,0,0,0)');
+    ctx.fillStyle = egBM; ctx.beginPath(); ctx.ellipse(cx + vi*r*0.38, cy - r*1.66, r*0.14, r*0.44, 0, 0, Math.PI*2); ctx.fill();
+  }
+  // Boss wings (dark, slightly purple-tinted)
+  ctx.fillStyle = '#1a1a3a'; ctx.strokeStyle = 'rgba(80,0,150,0.4)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx - r*0.60, cy - r*0.20); ctx.lineTo(cx - r*1.80, cy - r*0.68); ctx.lineTo(cx - r*1.54, cy + r*0.54); ctx.lineTo(cx - r*0.52, cy + r*0.30); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + r*0.60, cy - r*0.20); ctx.lineTo(cx + r*1.80, cy - r*0.68); ctx.lineTo(cx + r*1.54, cy + r*0.54); ctx.lineTo(cx + r*0.52, cy + r*0.30); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Black egg body
+  ctx.fillStyle = _sphereGrad(ctx, cx, cy + r*0.22, r*0.82, c.main);
   ctx.strokeStyle = 'rgba(0,0,0,0.4)';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.ellipse(cx, cy + r * 0.2, r * 0.78, r * 0.95, 0, 0, Math.PI * 2);
   ctx.fill(); ctx.stroke();
-  // Belly
+  // Dark belly
   ctx.fillStyle = c.belly;
   ctx.beginPath();
   ctx.ellipse(cx, cy + r * 0.4, r * 0.42, r * 0.65, 0, 0, Math.PI * 2);
   ctx.fill();
+
   // Head
-  ctx.fillStyle = c.main;
-  ctx.beginPath();
-  ctx.arc(cx, cy - r * 0.5, r * 0.78, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-  _addSphereDepth(ctx, cx, cy - r * 0.5, r * 0.78);
-  // Spiky hair (5 spikes)
+  _sphere(ctx, cx, cy - r * 0.5, r * 0.78, c.main, 'rgba(0,0,0,0.4)');
+
+  // ---- Dramatic spiky hair (5 tall spikes) ----
   ctx.fillStyle = '#000022';
   for (let i = -2; i <= 2; i++) {
     ctx.beginPath();
-    ctx.moveTo(cx + i * r * 0.25 - r * 0.12, cy - r * 1.1);
-    ctx.lineTo(cx + i * r * 0.25, cy - r * 1.65);
-    ctx.lineTo(cx + i * r * 0.25 + r * 0.12, cy - r * 1.1);
+    ctx.moveTo(cx + i * r * 0.26 - r * 0.12, cy - r * 1.1);
+    ctx.lineTo(cx + i * r * 0.26,             cy - r * 1.72);
+    ctx.lineTo(cx + i * r * 0.26 + r * 0.12,  cy - r * 1.1);
     ctx.closePath();
     ctx.fill();
   }
-  // Eyes (with angry pupils)
-  ctx.fillStyle = c.eye;
+
+  // ---- Angry angled eyebrows ----
+  ctx.strokeStyle = '#000022';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.arc(cx - r * 0.28, cy - r * 0.6, r * 0.18, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.moveTo(cx - r * 0.44, cy - r * 0.84);
+  ctx.lineTo(cx - r * 0.14, cy - r * 0.77);
+  ctx.stroke();
   ctx.beginPath();
-  ctx.arc(cx + r * 0.28, cy - r * 0.6, r * 0.18, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.moveTo(cx + r * 0.14, cy - r * 0.77);
+  ctx.lineTo(cx + r * 0.44, cy - r * 0.84);
+  ctx.stroke();
+
+  // Large oval eyes
+  _sphere(ctx, cx - r * 0.28, cy - r * 0.6, r * 0.18, c.eye, 'rgba(0,0,0,0.4)');
+  _sphere(ctx, cx + r * 0.28, cy - r * 0.6, r * 0.18, c.eye, 'rgba(0,0,0,0.4)');
+  // Red pupils (boss Badtz-Maru has red pupils)
   ctx.fillStyle = c.pupil;
   ctx.beginPath();
   ctx.arc(cx - r * 0.26, cy - r * 0.58, r * 0.11, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx + r * 0.3, cy - r * 0.58, r * 0.11, 0, Math.PI * 2);
+  ctx.arc(cx + r * 0.30, cy - r * 0.58, r * 0.11, 0, Math.PI * 2);
   ctx.fill();
-  // Angry eyebrows
-  ctx.strokeStyle = '#000022';
-  ctx.lineWidth = 2.5;
+  ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.moveTo(cx - r * 0.42, cy - r * 0.82);
-  ctx.lineTo(cx - r * 0.14, cy - r * 0.78);
-  ctx.stroke();
+  ctx.arc(cx - r * 0.21, cy - r * 0.65, r * 0.05, 0, Math.PI * 2);
+  ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(cx + r * 0.14, cy - r * 0.78);
-  ctx.lineTo(cx + r * 0.42, cy - r * 0.82);
-  ctx.stroke();
-  // Beak
+  ctx.arc(cx + r * 0.35, cy - r * 0.65, r * 0.05, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Diamond-shaped yellow beak
   ctx.fillStyle = c.beak;
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(cx - r * 0.14, cy - r * 0.42);
-  ctx.lineTo(cx + r * 0.14, cy - r * 0.42);
-  ctx.lineTo(cx, cy - r * 0.18);
+  ctx.moveTo(cx,            cy - r * 0.42);
+  ctx.lineTo(cx - r * 0.16, cy - r * 0.3);
+  ctx.lineTo(cx,            cy - r * 0.18);
+  ctx.lineTo(cx + r * 0.16, cy - r * 0.3);
   ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // Boss crown (purple with gem)
+  ctx.fillStyle = c.crown || '#9400d3';
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = 1.5;
+  const cr = r * 0.32;
+  ctx.beginPath();
+  ctx.moveTo(cx - cr,       cy - r * 1.85);
+  ctx.lineTo(cx - cr,       cy - r * 1.85 - cr);
+  ctx.lineTo(cx - cr * 0.5, cy - r * 1.85 - cr * 0.5);
+  ctx.lineTo(cx,            cy - r * 1.85 - cr);
+  ctx.lineTo(cx + cr * 0.5, cy - r * 1.85 - cr * 0.5);
+  ctx.lineTo(cx + cr,       cy - r * 1.85 - cr);
+  ctx.lineTo(cx + cr,       cy - r * 1.85);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = c.crownGem || '#ff69b4';
+  ctx.beginPath();
+  ctx.arc(cx, cy - r * 1.85 - cr, cr * 0.2, 0, Math.PI * 2);
   ctx.fill();
 }
 
-// Kuromi boss
+// ============================================================
+// Kuromi Boss — dark jester bunny
+// ============================================================
 function drawKuromiBoss(ctx, cx, cy, s, c) {
   const r = 37 * s;
-  // Jester-like hood (dark with pink lining)
-  ctx.fillStyle = c.hood;
+
+  // Boss engine glow (top — 3 vents, eerie purple for Kuromi)
+  for (let vi = -1; vi <= 1; vi++) {
+    const egKU = ctx.createRadialGradient(cx + vi*r*0.36, cy - r*1.52, 0, cx + vi*r*0.36, cy - r*2.10, r*0.62);
+    egKU.addColorStop(0, 'rgba(200,80,255,0.95)'); egKU.addColorStop(0.5, 'rgba(120,0,200,0.55)'); egKU.addColorStop(1, 'rgba(60,0,100,0)');
+    ctx.fillStyle = egKU; ctx.beginPath(); ctx.ellipse(cx + vi*r*0.36, cy - r*1.62, r*0.13, r*0.42, 0, 0, Math.PI*2); ctx.fill();
+  }
+  // Boss wings (dark with purple tint)
+  ctx.fillStyle = '#1e0030'; ctx.strokeStyle = 'rgba(150,0,200,0.45)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx - r*0.56, cy - r*0.18); ctx.lineTo(cx - r*1.72, cy - r*0.64); ctx.lineTo(cx - r*1.48, cy + r*0.52); ctx.lineTo(cx - r*0.48, cy + r*0.28); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + r*0.56, cy - r*0.18); ctx.lineTo(cx + r*1.72, cy - r*0.64); ctx.lineTo(cx + r*1.48, cy + r*0.52); ctx.lineTo(cx + r*0.48, cy + r*0.28); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Dark jester hood (with gradient)
+  ctx.fillStyle = _sphereGrad(ctx, cx, cy - r*0.3, r, c.hood);
   ctx.strokeStyle = 'rgba(0,0,0,0.35)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -1033,17 +1452,20 @@ function drawKuromiBoss(ctx, cx, cy, s, c) {
   ctx.arc(cx, cy + r * 0.5, r, 0, Math.PI, false);
   ctx.closePath();
   ctx.fill(); ctx.stroke();
-  // Hood lining
+  // Pink hood lining at the bottom
   ctx.fillStyle = c.hoodLining;
   ctx.beginPath();
   ctx.arc(cx, cy + r * 0.5, r, 0, Math.PI, false);
   ctx.fill();
-  // Skull motif on hood
-  const sx = cx - r * 0.6, sy = cy - r * 0.25;
-  ctx.fillStyle = c.skull;
+  // Hood specular
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
   ctx.beginPath();
-  ctx.arc(sx, sy, r * 0.14, 0, Math.PI * 2);
+  ctx.ellipse(cx - r * 0.3, cy - r * 0.52, r * 0.32, r * 0.18, -0.3, 0, Math.PI * 2);
   ctx.fill();
+
+  // Skull motif on hood
+  const sx = cx - r * 0.62, sy = cy - r * 0.26;
+  _sphere(ctx, sx, sy, r * 0.14, c.skull, 'rgba(0,0,0,0.2)');
   ctx.fillStyle = c.skullEye;
   ctx.beginPath();
   ctx.arc(sx - r * 0.06, sy - r * 0.02, r * 0.04, 0, Math.PI * 2);
@@ -1051,13 +1473,17 @@ function drawKuromiBoss(ctx, cx, cy, s, c) {
   ctx.beginPath();
   ctx.arc(sx + r * 0.06, sy - r * 0.02, r * 0.04, 0, Math.PI * 2);
   ctx.fill();
-  // Face
-  ctx.fillStyle = c.main;
+  // Skull mouth
+  ctx.strokeStyle = c.skullEye;
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.arc(cx, cy + r * 0.12, r * 0.72, 0, Math.PI * 2);
-  ctx.fill();
-  _addSphereDepth(ctx, cx, cy + r * 0.12, r * 0.72);
-  // Ears (bunny ears peek from under hood)
+  ctx.arc(sx, sy + r * 0.07, r * 0.06, 0.2, Math.PI - 0.2);
+  ctx.stroke();
+
+  // White face
+  _sphere(ctx, cx, cy + r * 0.12, r * 0.72, c.main, 'rgba(0,0,0,0.2)');
+
+  // Pink bunny ears peek from under hood
   ctx.fillStyle = c.ear;
   ctx.beginPath();
   ctx.arc(cx - r * 0.62, cy - r * 0.62, r * 0.2, 0, Math.PI * 2);
@@ -1065,37 +1491,35 @@ function drawKuromiBoss(ctx, cx, cy, s, c) {
   ctx.beginPath();
   ctx.arc(cx + r * 0.62, cy - r * 0.62, r * 0.2, 0, Math.PI * 2);
   ctx.fill();
-  // Eyes (violet)
-  ctx.fillStyle = c.eye;
-  ctx.beginPath();
-  ctx.arc(cx - r * 0.22, cy + r * 0.1, r * 0.13, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx + r * 0.22, cy + r * 0.1, r * 0.13, 0, Math.PI * 2);
-  ctx.fill();
+
+  // Violet eyes
+  _sphere(ctx, cx - r * 0.22, cy + r * 0.1, r * 0.13, c.eye, 'rgba(0,0,0,0.25)');
+  _sphere(ctx, cx + r * 0.22, cy + r * 0.1, r * 0.13, c.eye, 'rgba(0,0,0,0.25)');
   ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.arc(cx - r * 0.19, cy + r * 0.07, r * 0.05, 0, Math.PI * 2);
+  ctx.arc(cx - r * 0.18, cy + r * 0.06, r * 0.05, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx + r * 0.25, cy + r * 0.07, r * 0.05, 0, Math.PI * 2);
+  ctx.arc(cx + r * 0.26, cy + r * 0.06, r * 0.05, 0, Math.PI * 2);
   ctx.fill();
-  // Cheeks
+
+  // Rosy cheeks
   ctx.fillStyle = c.cheek;
   ctx.globalAlpha = 0.45;
   ctx.beginPath();
-  ctx.arc(cx - r * 0.5, cy + r * 0.25, r * 0.22, 0, Math.PI * 2);
+  ctx.arc(cx - r * 0.5, cy + r * 0.26, r * 0.22, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx + r * 0.5, cy + r * 0.25, r * 0.22, 0, Math.PI * 2);
+  ctx.arc(cx + r * 0.5, cy + r * 0.26, r * 0.22, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
-  // Mouth (mischievous smirk)
+
+  // Mischievous smirk (asymmetric)
   ctx.strokeStyle = '#ff69b4';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(cx - r * 0.2, cy + r * 0.35);
-  ctx.quadraticCurveTo(cx + r * 0.05, cy + r * 0.48, cx + r * 0.3, cy + r * 0.3);
+  ctx.moveTo(cx - r * 0.2, cy + r * 0.36);
+  ctx.quadraticCurveTo(cx + r * 0.06, cy + r * 0.5, cx + r * 0.3, cy + r * 0.3);
   ctx.stroke();
 }
 
@@ -1288,17 +1712,13 @@ function drawBackground(ctx, level, bgState) {
 }
 
 function _drawMeadowBG(ctx, bg) {
-  // Sky gradient
   const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
   grad.addColorStop(0, '#87ceeb');
   grad.addColorStop(1, '#d4f4a4');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-  // Far clouds
   _drawScrolledElements(ctx, bg.far, _drawCloud.bind(null, ctx), '#fff');
-  // Mid flowers
   _drawScrolledElements(ctx, bg.mid, _drawFlower.bind(null, ctx));
-  // Near elements (petals)
   _drawScrolledElements(ctx, bg.near, _drawPetal.bind(null, ctx));
 }
 
@@ -1309,7 +1729,6 @@ function _drawRainbowBG(ctx, bg) {
   grad.addColorStop(1, '#8000ff');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-  // Rainbow stripes
   _drawScrolledElements(ctx, bg.far, _drawRainbowArc.bind(null, ctx));
   _drawScrolledElements(ctx, bg.mid, _drawCloud.bind(null, ctx), 'rgba(255,255,255,0.6)');
   _drawScrolledElements(ctx, bg.near, _drawStar.bind(null, ctx));
@@ -1348,7 +1767,6 @@ function _drawCastleBG(ctx, bg) {
   _drawScrolledElements(ctx, bg.near, _drawStar.bind(null, ctx), null, 0.6);
 }
 
-// Generic scrolled element renderer
 function _drawScrolledElements(ctx, elements, drawFn, color, alpha) {
   ctx.save();
   if (alpha !== undefined) ctx.globalAlpha = alpha;
@@ -1358,7 +1776,6 @@ function _drawScrolledElements(ctx, elements, drawFn, color, alpha) {
   ctx.restore();
 }
 
-// Individual element draw functions
 function _drawCloud(ctx, x, y, size, color) {
   ctx.fillStyle = color || 'rgba(255,255,255,0.85)';
   ctx.beginPath();
@@ -1455,11 +1872,9 @@ function _drawSeaweed(ctx, x, y, size) {
 function _drawCastleTurret(ctx, x, y, size) {
   ctx.fillStyle = 'rgba(80,0,120,0.6)';
   ctx.fillRect(x - size * 0.4, y - size, size * 0.8, size * 2);
-  // Battlements
   for (let i = -1; i <= 1; i++) {
     ctx.fillRect(x + i * size * 0.28 - size * 0.12, y - size * 1.3, size * 0.22, size * 0.3);
   }
-  // Window
   ctx.fillStyle = 'rgba(255,200,255,0.5)';
   ctx.beginPath();
   ctx.arc(x, y - size * 0.4, size * 0.22, Math.PI, 0);
@@ -1519,7 +1934,7 @@ function drawHUD(ctx, player, score, levelNum, bossHealthRatio) {
     _drawMiniKitty(ctx, 10 + i * 22, 12, player.character.colors);
   }
 
-  // ---- Boss health bar (top-center, drawn before bottom HUD) ----
+  // ---- Boss health bar ----
   if (bossHealthRatio !== null && bossHealthRatio !== undefined) {
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(CANVAS_W / 2 - 120, 8, 244, 18);
@@ -1534,28 +1949,24 @@ function drawHUD(ctx, player, score, levelNum, bossHealthRatio) {
     ctx.textAlign = 'left';
   }
 
-  // ---- HP bar — large, centered at bottom ----
+  // ---- HP bar ----
   const barW   = 280, barH = 22;
   const barX   = (CANVAS_W - barW) / 2;
   const barY   = CANVAS_H - 46;
   const hpRatio = player.health / player.maxHealth;
 
-  // Background panel
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
   ctx.fillRect(barX - 38, barY - 20, barW + 42, barH + 24);
 
-  // "HP" label
   ctx.font = 'bold 15px "Courier New"';
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'right';
   ctx.fillText('HP', barX - 6, barY + barH * 0.72);
   ctx.textAlign = 'left';
 
-  // Empty bar
   ctx.fillStyle = COLOR_HEALTH_EMPTY;
   ctx.fillRect(barX, barY, barW, barH);
 
-  // Filled portion with gradient
   if (hpRatio > 0) {
     const fillW = barW * hpRatio;
     const grad = ctx.createLinearGradient(barX, barY, barX, barY + barH);
@@ -1563,7 +1974,6 @@ function drawHUD(ctx, player, score, levelNum, bossHealthRatio) {
     grad.addColorStop(0.5, '#ff3366');
     grad.addColorStop(1,   '#cc0033');
     ctx.fillStyle = grad;
-    // Pulse red glow when HP critical (≤25%)
     if (hpRatio <= 0.25) {
       const pulse = Math.abs(Math.sin(Date.now() * 0.006));
       ctx.shadowColor = '#ff0000';
@@ -1573,12 +1983,10 @@ function drawHUD(ctx, player, score, levelNum, bossHealthRatio) {
     ctx.shadowBlur = 0;
   }
 
-  // White border (2px)
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth   = 2;
   ctx.strokeRect(barX, barY, barW, barH);
 
-  // Heart pips at 25/50/75/100% marks (clipped to filled portion)
   ctx.save();
   ctx.beginPath();
   ctx.rect(barX, barY, barW * hpRatio, barH);
@@ -1592,7 +2000,7 @@ function drawHUD(ctx, player, score, levelNum, bossHealthRatio) {
   }
   ctx.restore();
 
-  // ---- Weapon level pips — row above the HP bar ----
+  // ---- Weapon level pips ----
   const shotLevel   = player.shotLevel || 1;
   const pipCount    = 6;
   const pipSpacing  = 38;
@@ -1618,7 +2026,6 @@ function drawHUD(ctx, player, score, levelNum, bossHealthRatio) {
     }
   }
 
-  // Weapon label
   ctx.font      = '10px "Courier New"';
   ctx.fillStyle = 'rgba(255,255,255,0.65)';
   ctx.textAlign = 'center';
@@ -1634,23 +2041,22 @@ function _drawMiniKitty(ctx, cx, cy, colors) {
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.fill();
-  // Ears
+  // Ears — rounded dome shape (matches main drawKittyCharacter)
+  const mEarW = r * 0.36, mEarH = r * 0.50;
   ctx.beginPath();
-  ctx.moveTo(cx - r * 0.5, cy - r * 0.6);
-  ctx.lineTo(cx - r * 0.85, cy - r * 1.2);
-  ctx.lineTo(cx - r * 0.15, cy - r);
+  ctx.moveTo(cx - r * 0.60 - mEarW, cy - r * 0.90);
+  ctx.bezierCurveTo(cx - r * 0.60 - mEarW, cy - r * 0.90 - mEarH, cx - r * 0.60 + mEarW, cy - r * 0.90 - mEarH, cx - r * 0.60 + mEarW, cy - r * 0.90);
   ctx.closePath();
   ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(cx + r * 0.5, cy - r * 0.6);
-  ctx.lineTo(cx + r * 0.85, cy - r * 1.2);
-  ctx.lineTo(cx + r * 0.15, cy - r);
+  ctx.moveTo(cx + r * 0.60 - mEarW, cy - r * 0.90);
+  ctx.bezierCurveTo(cx + r * 0.60 - mEarW, cy - r * 0.90 - mEarH, cx + r * 0.60 + mEarW, cy - r * 0.90 - mEarH, cx + r * 0.60 + mEarW, cy - r * 0.90);
   ctx.closePath();
   ctx.fill();
-  // Bow dot
+  // Bow at base of right ear
   ctx.fillStyle = colors.bow;
   ctx.beginPath();
-  ctx.arc(cx + r * 0.55, cy - r * 0.8, r * 0.28, 0, Math.PI * 2);
+  ctx.arc(cx + r * 0.60, cy - r * 0.90, r * 0.28, 0, Math.PI * 2);
   ctx.fill();
   // Eyes
   ctx.fillStyle = '#1a1a1a';
