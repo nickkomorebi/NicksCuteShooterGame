@@ -147,9 +147,10 @@ class Game {
 
     // Update player
     this.player.update(dt, this.input);
+    this._applyTouchMovement();
 
     // Player shooting
-    if (this.input.isHeld('Space') || this.input.isHeld('KeyZ') || this.input.isHeld('KeyX') || this.input.isTouching()) {
+    if (this.input.isHeld('Space') || this.input.isHeld('KeyZ') || this.input.isHeld('KeyX') || this.input.touch.active) {
       const newBullets = this.player.shoot();
       if (newBullets.length > 0) this.shotsFired += newBullets.length;
       this.bullets.push(...newBullets);
@@ -225,9 +226,10 @@ class Game {
 
     // Update player
     this.player.update(dt, this.input);
+    this._applyTouchMovement();
 
     // Player shooting
-    if (this.input.isHeld('Space') || this.input.isHeld('KeyZ') || this.input.isHeld('KeyX') || this.input.isTouching()) {
+    if (this.input.isHeld('Space') || this.input.isHeld('KeyZ') || this.input.isHeld('KeyX') || this.input.touch.active) {
       const newBullets = this.player.shoot();
       if (newBullets.length > 0) this.shotsFired += newBullets.length;
       this.bullets.push(...newBullets);
@@ -626,6 +628,16 @@ class Game {
     this.screenShake  = 0;
     // Level entry flash
     this._triggerFlash('#ffffff', 0.5);
+  }
+
+  // Move player directly to touch position. Lives in game.js (not entities.js)
+  // so it reads this.input.touch directly — same object the HUD debug confirmed works.
+  _applyTouchMovement() {
+    if (!this.player || !this.input.touch.active) return;
+    const tx = this.input.touch.x;
+    const ty = this.input.touch.y;
+    this.player.x = clamp(tx - this.player.width  / 2,      0, CANVAS_W - this.player.width);
+    this.player.y = clamp(ty - this.player.height / 2 - 30, 0, CANVAS_H - this.player.height);
   }
 
   async _handleEndGame() {

@@ -36,13 +36,6 @@ class Player {
     this.x = clamp(this.x + dx * this.speed * dt, 0, CANVAS_W - this.width);
     this.y = clamp(this.y + dy * this.speed * dt, 0, CANVAS_H - this.height);
 
-    // Touch movement: ship follows finger (offset up 30px so finger doesn't cover the ship)
-    if (input.isTouching()) {
-      const pos = input.touchPos();
-      this.x = clamp(pos.x - this.width / 2, 0, CANVAS_W - this.width);
-      this.y = clamp(pos.y - this.height / 2 - 30, 0, CANVAS_H - this.height);
-    }
-
     // Invincibility frames
     if (this.invincible) {
       this.invincibleTimer -= dt;
