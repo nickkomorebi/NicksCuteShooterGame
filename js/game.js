@@ -9,14 +9,15 @@ class Game {
     this.input   = new InputManager();
 
     // State machine
-    this.state   = 'TITLE';  // TITLE | CHAR_SELECT | PLAYING | BOSS_FIGHT | BOSS_DYING | LEVEL_CLEAR | GAME_OVER | WIN
+    this.state   = 'TITLE';  // TITLE | CHAR_SELECT | PLAYING | BOSS_FIGHT | BOSS_DYING | LEVEL_CLEAR | GAME_OVER | WIN | LEADERBOARD
 
     // Screens
-    this.titleScreen     = new TitleScreen();
+    this.titleScreen      = new TitleScreen();
     this.charSelectScreen = null;
     this.levelClearScreen = null;
-    this.gameOverScreen  = null;
-    this.winScreen       = null;
+    this.gameOverScreen   = null;
+    this.winScreen        = null;
+    this.leaderboardScreen = null;
 
     // Game objects
     this.player      = null;
@@ -48,9 +49,11 @@ class Game {
     this.shotsFired   = 0;
     this.shotsHit     = 0;
     this.enemiesKilled = 0;
+    this.levelStartTime = 0;  // performance.now() when level begins
 
-    // Pause
+    // Pause / async flags
     this.paused = false;
+    this._scoreCheckPending = false;
 
     this.lastTime = 0;
   }
@@ -95,6 +98,7 @@ class Game {
       case 'LEVEL_CLEAR': this._updateLevelClear(dt); break;
       case 'GAME_OVER':   this._updateGameOver(dt); break;
       case 'WIN':         this._updateWin(dt); break;
+      case 'LEADERBOARD': this._updateLeaderboard(dt); break;
     }
     this.input.flush();
   }
@@ -104,6 +108,9 @@ class Game {
     if (this.input.isPressed('Enter') || this.input.isPressed('Space') || this.input.touchJustStarted()) {
       this.charSelectScreen = new CharSelectScreen();
       this.state = 'CHAR_SELECT';
+    }
+    if (this.input.isPressed('KeyL')) {
+      this._openLeaderboard();
     }
   }
 
@@ -297,12 +304,15 @@ class Game {
 
   _goToLevelClear() {
     const level = LEVEL_DEFS[this.currentLevel];
+    const elapsed = (performance.now() - this.levelStartTime) / 1000;
+    const speedBonus = Math.max(0, SPEED_BONUS_BASE - Math.floor(elapsed) * SPEED_BONUS_DECAY);
+    this.score += speedBonus;
     this.levelClearScreen = new LevelClearScreen(
       level.name,
       this.score,
       this.enemiesKilled,
-      this.shotsFired,
-      this.shotsHit
+      elapsed,
+      speedBonus
     );
     this.state = 'LEVEL_CLEAR';
   }
@@ -323,15 +333,26 @@ class Game {
 
   _updateGameOver(dt) {
     this.gameOverScreen.update(dt);
-    if (this.gameOverScreen.isReadyToReturn(this.input)) {
-      this._resetToTitle();
+    if (!this._scoreCheckPending && this.gameOverScreen.isReadyToReturn(this.input)) {
+      this._scoreCheckPending = true;
+      this._handleEndGame();
     }
   }
 
   _updateWin(dt) {
     this.winScreen.update(dt, this.input);
-    if (this.winScreen.isReadyToReturn(this.input)) {
-      this._resetToTitle();
+    if (!this._scoreCheckPending && this.winScreen.isReadyToReturn(this.input)) {
+      this._scoreCheckPending = true;
+      this._handleEndGame();
+    }
+  }
+
+  _updateLeaderboard(dt) {
+    if (this.leaderboardScreen) {
+      this.leaderboardScreen.update(dt);
+      if (this.leaderboardScreen.isDone(this.input)) {
+        this._resetToTitle();
+      }
     }
   }
 
@@ -597,8 +618,9 @@ class Game {
     this.allWavesCleared = false;
     this.waveClearTimer  = 0;
     this.particles.clear();
-    this.bgState      = createBGState(levelIndex + 1);
-    this.state        = 'PLAYING';
+    this.bgState        = createBGState(levelIndex + 1);
+    this.levelStartTime = performance.now();
+    this.state          = 'PLAYING';
     // Reset flash
     this.flashAlpha   = 0;
     this.screenShake  = 0;
@@ -606,9 +628,66 @@ class Game {
     this._triggerFlash('#ffffff', 0.5);
   }
 
+  async _handleEndGame() {
+    let qualifies = false;
+    try {
+      const res  = await fetch('/api/scores');
+      const top10 = await res.json();
+      qualifies = this.score > 0 && (top10.length < 10 || this.score > top10[top10.length - 1].score);
+    } catch (e) { /* API unavailable — skip high score */ }
+
+    this._scoreCheckPending = false;
+
+    if (qualifies) {
+      this._showNameInput();
+    } else {
+      this._resetToTitle();
+    }
+  }
+
+  _showNameInput() {
+    this.paused = true;
+    const overlay = document.getElementById('scoreOverlay');
+    const msgEl   = document.getElementById('scoreMsg');
+    const valEl   = document.getElementById('scoreVal');
+    const input   = document.getElementById('playerNameInput');
+    msgEl.textContent = '✨ NEW HIGH SCORE! ✨';
+    valEl.textContent = this.score.toLocaleString() + ' pts';
+    input.value = '';
+    overlay.style.display = 'flex';
+    setTimeout(() => input.focus(), 50);
+
+    const submit = async (name) => {
+      overlay.style.display = 'none';
+      this.paused = false;
+      try {
+        await fetch('/api/scores', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ name: name || 'Anonymous', score: this.score })
+        });
+      } catch (e) { /* ignore submit errors */ }
+      this._openLeaderboard();
+    };
+
+    document.getElementById('submitScoreBtn').onclick = () => submit(input.value.trim());
+    input.onkeydown = (e) => { if (e.key === 'Enter') submit(input.value.trim()); };
+  }
+
+  async _openLeaderboard() {
+    let scores = [];
+    try {
+      const res = await fetch('/api/scores');
+      scores = await res.json();
+    } catch (e) { /* show empty board if API down */ }
+    this.leaderboardScreen = new LeaderboardScreen(scores);
+    this.state = 'LEADERBOARD';
+  }
+
   _resetToTitle() {
-    this.state        = 'TITLE';
-    this.titleScreen  = new TitleScreen();
+    this.state              = 'TITLE';
+    this._scoreCheckPending = false;
+    this.titleScreen        = new TitleScreen();
     this.enemies      = [];
     this.bullets      = [];
     this.enemyBullets = [];
@@ -644,24 +723,13 @@ class Game {
       case 'LEVEL_CLEAR': this._drawLevelClear(ctx); break;
       case 'GAME_OVER':   this._drawGameOver(ctx); break;
       case 'WIN':         this._drawWin(ctx); break;
+      case 'LEADERBOARD': this._drawLeaderboard(ctx); break;
     }
 
     // Flash overlay
     if (this.flashAlpha > 0) {
       drawFlash(ctx, this.flashColor, this.flashAlpha);
     }
-
-    // DEBUG: touch state overlay (remove once touch is confirmed working)
-    const t = this.input.touch;
-    const p = this.player;
-    ctx.save();
-    ctx.resetTransform();
-    ctx.font = 'bold 13px monospace';
-    ctx.fillStyle = t.active ? 'lime' : 'red';
-    ctx.fillText(`touch:${t.active ? 'ON' : 'OFF'} tx:${Math.round(t.x)} ty:${Math.round(t.y)}`, 8, 18);
-    ctx.fillStyle = 'yellow';
-    ctx.fillText(`player px:${p ? Math.round(p.x) : '?'} py:${p ? Math.round(p.y) : '?'}`, 8, 34);
-    ctx.restore();
 
     ctx.restore();
   }
@@ -752,6 +820,10 @@ class Game {
 
   _drawWin(ctx) {
     this.winScreen.draw(ctx);
+  }
+
+  _drawLeaderboard(ctx) {
+    if (this.leaderboardScreen) this.leaderboardScreen.draw(ctx);
   }
 }
 

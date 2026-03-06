@@ -156,5 +156,6 @@ const COLOR_HEALTH_EMPTY  = '#440011';
 const COLOR_BOSS_BAR      = '#cc00cc';
 
 // ---------- Scoring ----------
-const ACCURACY_BONUS      = 5000;  // max accuracy bonus
+const SPEED_BONUS_BASE    = 5000;  // max speed bonus (cleared in <100s)
+const SPEED_BONUS_DECAY   = 50;    // pts lost per second over 100s
 const BOSS_KILL_BONUS     = 1000;

@@ -9,6 +9,15 @@
 <body>
   <canvas id="gameCanvas" width="480" height="720"></canvas>
 
+  <div id="scoreOverlay">
+    <div id="scoreBox">
+      <p id="scoreMsg"></p>
+      <p id="scoreVal"></p>
+      <input type="text" id="playerNameInput" maxlength="20" placeholder="Enter your name..." autocomplete="off" />
+      <button id="submitScoreBtn">SUBMIT ★</button>
+    </div>
+  </div>
+
   <script src="js/constants.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/input.js"></script>

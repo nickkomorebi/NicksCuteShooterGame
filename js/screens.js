@@ -338,14 +338,14 @@ class CharSelectScreen {
 // LEVEL CLEAR SCREEN
 // ============================================================
 class LevelClearScreen {
-  constructor(levelName, score, enemiesKilled, shotsFired, shotsHit) {
-    this.levelName    = levelName;
-    this.baseScore    = score;
+  constructor(levelName, score, enemiesKilled, elapsedTime, speedBonus) {
+    this.levelName     = levelName;
+    this.baseScore     = score;
     this.enemiesKilled = enemiesKilled;
-    this.shotsFired   = shotsFired;
-    this.shotsHit     = shotsHit;
-    this.timer        = 0;
-    this.autoAdvance  = 4.0;   // seconds
+    this.elapsedTime   = elapsedTime;
+    this.speedBonus    = speedBonus;
+    this.timer         = 0;
+    this.autoAdvance   = 4.0;   // seconds
     this.particles    = [];
     this._burst();
   }
@@ -378,7 +378,7 @@ class LevelClearScreen {
   }
 
   isComplete(input) {
-    return this.timer >= this.autoAdvance || input.isPressed('Enter');
+    return this.timer >= this.autoAdvance || input.isPressed('Enter') || input.touchJustStarted();
   }
 
   draw(ctx) {
@@ -405,7 +405,7 @@ class LevelClearScreen {
 
     // "LEVEL CLEAR!"
     ctx.save();
-    const scale = 1 + 0.04 * Math.sin(this.timer * 4);
+    const scale = 1 + 0.015 * Math.sin(this.timer * 1.5);
     ctx.translate(CANVAS_W / 2, 150);
     ctx.scale(scale, scale);
     ctx.font = 'bold 38px "Courier New"';
@@ -424,16 +424,16 @@ class LevelClearScreen {
     ctx.textAlign = 'left';
 
     // Score breakdown
-    const accuracy = this.shotsFired > 0 ? Math.round(this.shotsHit / this.shotsFired * 100) : 0;
     const bossBonus = BOSS_KILL_BONUS;
-    const accBonus  = Math.round(accuracy / 100 * ACCURACY_BONUS);
-    const total = this.baseScore;
+    const mins = Math.floor(this.elapsedTime / 60);
+    const secs = Math.floor(this.elapsedTime % 60);
+    const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
     const rows = [
-      { label: 'Stage Score:',    value: this.baseScore - bossBonus - accBonus },
-      { label: 'Boss Bonus:',     value: bossBonus },
-      { label: 'Accuracy ' + accuracy + '%:', value: accBonus },
-      { label: 'Total Score:',    value: total, highlight: true }
+      { label: 'Stage Score:',              value: this.baseScore - bossBonus - this.speedBonus },
+      { label: 'Boss Bonus:',               value: bossBonus },
+      { label: `Speed Bonus (${timeStr}):`, value: this.speedBonus },
+      { label: 'Total Score:',              value: this.baseScore, highlight: true }
     ];
 
     let ry = 240;
@@ -456,7 +456,7 @@ class LevelClearScreen {
     ctx.font = '12px "Courier New"';
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.textAlign = 'center';
-    ctx.fillText('Enemies: ' + this.enemiesKilled + '   Shots: ' + this.shotsFired + '   Hits: ' + this.shotsHit, CANVAS_W / 2, ry + 10);
+    ctx.fillText('Enemies defeated: ' + this.enemiesKilled, CANVAS_W / 2, ry + 10);
     ctx.textAlign = 'left';
 
     // Continue prompt
@@ -483,7 +483,7 @@ class GameOverScreen {
   update(dt) { this.timer += dt; }
 
   isReadyToReturn(input) {
-    return this.timer > 1.2 && (input.isPressed('Enter') || input.isPressed('Space'));
+    return this.timer > 1.2 && (input.isPressed('Enter') || input.isPressed('Space') || input.touchJustStarted());
   }
 
   draw(ctx) {
@@ -503,7 +503,7 @@ class GameOverScreen {
 
     // "GAME OVER" text
     ctx.save();
-    const pulse = 1 + 0.03 * Math.sin(this.timer * 5);
+    const pulse = 1 + 0.015 * Math.sin(this.timer * 1.5);
     ctx.translate(CANVAS_W / 2, 240);
     ctx.scale(pulse, pulse);
     ctx.font = 'bold 52px "Courier New"';
@@ -573,7 +573,7 @@ class WinScreen {
   }
 
   isReadyToReturn(input) {
-    return this.timer > 2.0 && (input.isPressed('Enter') || input.isPressed('Space'));
+    return this.timer > 2.0 && (input.isPressed('Enter') || input.isPressed('Space') || input.touchJustStarted());
   }
 
   draw(ctx) {
@@ -616,6 +616,81 @@ class WinScreen {
     ctx.textAlign = 'center';
     ctx.fillText('Thank you for playing~ ♥♥♥', CANVAS_W / 2, CANVAS_H - 18);
     ctx.textAlign = 'left';
+  }
+}
+
+// ============================================================
+// LEADERBOARD SCREEN
+// ============================================================
+class LeaderboardScreen {
+  constructor(scores) {
+    this.scores = scores; // [{name, score}]
+    this.timer  = 0;
+  }
+
+  update(dt) { this.timer += dt; }
+
+  isDone(input) {
+    return this.timer > 0.5 && (input.isPressed('Enter') || input.isPressed('Space') || input.touchJustStarted());
+  }
+
+  draw(ctx) {
+    const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+    grad.addColorStop(0, '#0a001e');
+    grad.addColorStop(1, '#1a003a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Title
+    ctx.font = 'bold 30px "Courier New"';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillText('★ HIGH SCORES ★', CANVAS_W / 2 + 2, 54);
+    ctx.fillStyle = '#ffd700';
+    ctx.fillText('★ HIGH SCORES ★', CANVAS_W / 2, 52);
+
+    // Divider
+    ctx.strokeStyle = '#ff69b4';
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.4;
+    ctx.beginPath(); ctx.moveTo(40, 66); ctx.lineTo(CANVAS_W - 40, 66); ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    if (this.scores.length === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '14px "Courier New"';
+      ctx.fillText('No scores yet — be the first!', CANVAS_W / 2, 200);
+    } else {
+      const rankColors = ['#ffd700', '#c0c0c0', '#cd7f32'];
+      for (let i = 0; i < this.scores.length; i++) {
+        const s = this.scores[i];
+        const y = 100 + i * 54;
+        const isTop3 = i < 3;
+
+        // Row bg for top 3
+        if (isTop3) {
+          ctx.fillStyle = `rgba(255,215,0,${0.06 - i * 0.015})`;
+          ctx.fillRect(40, y - 20, CANVAS_W - 80, 34);
+        }
+
+        ctx.font = isTop3 ? 'bold 15px "Courier New"' : '13px "Courier New"';
+        ctx.fillStyle = rankColors[i] || 'rgba(255,255,255,0.75)';
+
+        // Rank
+        ctx.textAlign = 'left';
+        ctx.fillText(`#${i + 1}`, 52, y);
+
+        // Name
+        ctx.fillText(s.name, 100, y);
+
+        // Score
+        ctx.textAlign = 'right';
+        ctx.fillText(Number(s.score).toLocaleString(), CANVAS_W - 52, y);
+      }
+    }
+
+    ctx.textAlign = 'left';
+    _blinkText(ctx, 'TAP  /  PRESS ENTER TO RETURN', CANVAS_W / 2, CANVAS_H - 28, this.timer, '#ff69b4', '12px "Courier New"');
   }
 }
 
