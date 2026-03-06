@@ -147,7 +147,7 @@ class TitleScreen {
     ctx.globalAlpha = 1;
 
     // Blink prompt
-    _blinkText(ctx, 'PRESS  ENTER  TO  START', CANVAS_W / 2, 430, this.timer, '#ffffff', 'bold 15px "Courier New"');
+    _blinkText(ctx, 'TAP  OR  PRESS  ENTER  TO  START', CANVAS_W / 2, 430, this.timer, '#ffffff', 'bold 13px "Courier New"');
 
     // High score / credits placeholder
     ctx.fillStyle = 'rgba(255,255,255,0.4)';

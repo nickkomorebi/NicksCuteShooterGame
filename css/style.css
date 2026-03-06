@@ -20,4 +20,5 @@ body {
   image-rendering: crisp-edges;
   border: 2px solid #ff69b4;
   box-shadow: 0 0 20px #ff69b4, 0 0 60px #ff1493, 0 0 100px rgba(255,20,147,0.3);
+  touch-action: none;
 }

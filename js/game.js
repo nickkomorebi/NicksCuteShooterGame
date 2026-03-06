@@ -56,8 +56,17 @@ class Game {
   }
 
   start() {
+    this._fitCanvas();
+    window.addEventListener('resize', () => this._fitCanvas());
     this.lastTime = performance.now();
     requestAnimationFrame(ts => this.loop(ts));
+  }
+
+  // Scale the canvas CSS size to fit the viewport while preserving aspect ratio
+  _fitCanvas() {
+    const scale = Math.min(1, window.innerWidth / CANVAS_W, window.innerHeight / CANVAS_H);
+    this.canvas.style.width  = Math.round(CANVAS_W * scale) + 'px';
+    this.canvas.style.height = Math.round(CANVAS_H * scale) + 'px';
   }
 
   loop(timestamp) {
@@ -92,13 +101,20 @@ class Game {
 
   _updateTitle(dt) {
     this.titleScreen.update(dt);
-    if (this.input.isPressed('Enter') || this.input.isPressed('Space')) {
+    if (this.input.isPressed('Enter') || this.input.isPressed('Space') || this.input.touchJustStarted()) {
       this.charSelectScreen = new CharSelectScreen();
       this.state = 'CHAR_SELECT';
     }
   }
 
   _updateCharSelect(dt) {
+    // Touch nav: left third = prev character, right third = next, center = confirm
+    if (this.input.touchJustStarted()) {
+      const tx = this.input.touchPos().x;
+      if (tx < CANVAS_W / 3)            this.input.pressVirtual('ArrowLeft');
+      else if (tx > (CANVAS_W * 2) / 3) this.input.pressVirtual('ArrowRight');
+      else                               this.input.pressVirtual('Space');
+    }
     this.charSelectScreen.update(dt, this.input);
     if (this.charSelectScreen.isConfirmed()) {
       const chosen = this.charSelectScreen.getSelected();
@@ -125,7 +141,7 @@ class Game {
     this.player.update(dt, this.input);
 
     // Player shooting
-    if (this.input.isHeld('Space') || this.input.isHeld('KeyZ') || this.input.isHeld('KeyX')) {
+    if (this.input.isHeld('Space') || this.input.isHeld('KeyZ') || this.input.isHeld('KeyX') || this.input.isTouching()) {
       const newBullets = this.player.shoot();
       if (newBullets.length > 0) this.shotsFired += newBullets.length;
       this.bullets.push(...newBullets);
@@ -203,7 +219,7 @@ class Game {
     this.player.update(dt, this.input);
 
     // Player shooting
-    if (this.input.isHeld('Space') || this.input.isHeld('KeyZ') || this.input.isHeld('KeyX')) {
+    if (this.input.isHeld('Space') || this.input.isHeld('KeyZ') || this.input.isHeld('KeyX') || this.input.isTouching()) {
       const newBullets = this.player.shoot();
       if (newBullets.length > 0) this.shotsFired += newBullets.length;
       this.bullets.push(...newBullets);
