@@ -651,6 +651,15 @@ class Game {
       drawFlash(ctx, this.flashColor, this.flashAlpha);
     }
 
+    // DEBUG: touch state overlay (remove once touch is confirmed working)
+    const t = this.input.touch;
+    ctx.save();
+    ctx.resetTransform();
+    ctx.fillStyle = t.active ? 'lime' : 'red';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillText(`touch:${t.active ? 'ON' : 'OFF'} x:${Math.round(t.x)} y:${Math.round(t.y)}`, 8, 20);
+    ctx.restore();
+
     ctx.restore();
   }
 
