@@ -310,9 +310,20 @@ class CharSelectScreen {
     ctx.fillText(hearts.trim(), CANVAS_W / 2, barStartY + barSep * 3 + 22);
     ctx.textAlign = 'left';
 
+    // Mobile tap zone hints
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, CANVAS_H * 0.75, CANVAS_W, CANVAS_H * 0.25);
+    ctx.globalAlpha = 1;
+
     // Confirm prompt
     if (!this.confirmed) {
-      _blinkText(ctx, 'PRESS  ENTER  TO  CONFIRM', CANVAS_W / 2, CANVAS_H - 22, this.timer, '#ffd700', 'bold 13px "Courier New"');
+      _blinkText(ctx, 'TAP HERE  /  PRESS ENTER  TO  CONFIRM', CANVAS_W / 2, CANVAS_H - 30, this.timer, '#ffd700', 'bold 11px "Courier New"');
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.font = '10px "Courier New"';
+      ctx.textAlign = 'center';
+      ctx.fillText('tap left half / right half to cycle', CANVAS_W / 2, CANVAS_H - 12);
+      ctx.textAlign = 'left';
     } else {
       ctx.fillStyle = '#ffd700';
       ctx.font = 'bold 14px "Courier New"';

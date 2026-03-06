@@ -50,14 +50,25 @@ class InputManager {
     // Document-level listeners catch taps that canvas-level events miss (e.g. iOS Safari).
     // These only set the "just started" flag for menu navigation — not touch.active,
     // which is reserved for gameplay (canvas-only).
+    // Document-level touch handlers ensure events are never missed due to browser quirks
     document.addEventListener('touchstart', e => {
-      this._touchStartedThisFrame = true;
-      // Also update touch position using first touch, mapped to canvas coords
       if (e.touches.length > 0) {
         const mapped = this._mapToCanvas(e.touches[0]);
+        this.touch.active = true;
         this.touch.x = mapped.x;
         this.touch.y = mapped.y;
       }
+      this._touchStartedThisFrame = true;
+    }, { passive: true });
+
+    // Critical: clear touch.active at document level so it never gets stuck
+    // (canvas-level touchend can be missed when the game state changes mid-tap)
+    document.addEventListener('touchend', e => {
+      if (e.touches.length === 0) this.touch.active = false;
+    }, { passive: true });
+
+    document.addEventListener('touchcancel', () => {
+      this.touch.active = false;
     }, { passive: true });
 
     document.addEventListener('click', e => {

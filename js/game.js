@@ -108,12 +108,13 @@ class Game {
   }
 
   _updateCharSelect(dt) {
-    // Touch nav: left third = prev character, right third = next, center = confirm
+    // Touch nav: bottom quarter = confirm, left half = prev, right half = next
     if (this.input.touchJustStarted()) {
       const tx = this.input.touchPos().x;
-      if (tx < CANVAS_W / 3)            this.input.pressVirtual('ArrowLeft');
-      else if (tx > (CANVAS_W * 2) / 3) this.input.pressVirtual('ArrowRight');
-      else                               this.input.pressVirtual('Space');
+      const ty = this.input.touchPos().y;
+      if (ty > CANVAS_H * 0.75)  this.input.pressVirtual('Space');
+      else if (tx < CANVAS_W / 2) this.input.pressVirtual('ArrowLeft');
+      else                         this.input.pressVirtual('ArrowRight');
     }
     this.charSelectScreen.update(dt, this.input);
     if (this.charSelectScreen.isConfirmed()) {
