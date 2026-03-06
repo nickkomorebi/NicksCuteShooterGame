@@ -672,14 +672,18 @@ class Game {
     const submit = async (name) => {
       overlay.style.display = 'none';
       this.paused = false;
+      // Switch state immediately so no further game-over/win update runs
+      this.leaderboardScreen = new LeaderboardScreen([]);
+      this.state = 'LEADERBOARD';
       try {
         await fetch('/api/scores', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ name: name || 'Anonymous', score: this.score })
+          body:    JSON.stringify({ name: name || 'AAA', score: this.score })
         });
-      } catch (e) { /* ignore submit errors */ }
-      this._openLeaderboard();
+        const res = await fetch('/api/scores');
+        this.leaderboardScreen.scores = await res.json();
+      } catch (e) { /* ignore errors, show empty board */ }
     };
 
     document.getElementById('submitScoreBtn').onclick = () => submit(input.value.trim());
@@ -716,9 +720,11 @@ class Game {
   draw() {
     const ctx = this.ctx;
 
-    // Screen shake
+    // Screen shake — only during active gameplay, not menus or end screens
     ctx.save();
-    if (this.screenShake > 0) {
+    const shakeActive = this.screenShake > 0 &&
+      (this.state === 'PLAYING' || this.state === 'BOSS_FIGHT' || this.state === 'BOSS_DYING');
+    if (shakeActive) {
       const sx = randomRange(-this.screenShake * 8, this.screenShake * 8);
       const sy = randomRange(-this.screenShake * 8, this.screenShake * 8);
       ctx.translate(sx, sy);

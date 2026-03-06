@@ -33,7 +33,7 @@ app.post('/api/scores', (req, res) => {
   if (typeof score !== 'number' || !isFinite(score)) {
     return res.status(400).json({ error: 'Invalid score' });
   }
-  const safeName = String(name || 'Anonymous').replace(/[<>]/g, '').slice(0, 20).trim() || 'Anonymous';
+  const safeName = String(name || 'AAA').replace(/[<>]/g, '').slice(0, 3).trim().toUpperCase() || 'AAA';
   db.prepare('INSERT INTO scores (name, score) VALUES (?, ?)').run(safeName, Math.floor(score));
   res.json({ ok: true });
 });
