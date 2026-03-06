@@ -47,9 +47,20 @@ class InputManager {
       if (e.touches.length === 0) this.touch.active = false;
     }, { passive: false });
 
-    // click fires reliably on mobile (after tap) and on desktop — used as a fallback
-    // for menu navigation so a quick tap is never missed
-    this._canvas.addEventListener('click', e => {
+    // Document-level listeners catch taps that canvas-level events miss (e.g. iOS Safari).
+    // These only set the "just started" flag for menu navigation — not touch.active,
+    // which is reserved for gameplay (canvas-only).
+    document.addEventListener('touchstart', e => {
+      this._touchStartedThisFrame = true;
+      // Also update touch position using first touch, mapped to canvas coords
+      if (e.touches.length > 0) {
+        const mapped = this._mapToCanvas(e.touches[0]);
+        this.touch.x = mapped.x;
+        this.touch.y = mapped.y;
+      }
+    }, { passive: true });
+
+    document.addEventListener('click', e => {
       const rect = this._canvas.getBoundingClientRect();
       this._touchStartedThisFrame = true;
       this.touch.x = (e.clientX - rect.left) * (this._canvas.width  / rect.width);
