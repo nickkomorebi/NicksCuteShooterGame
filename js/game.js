@@ -653,11 +653,14 @@ class Game {
 
     // DEBUG: touch state overlay (remove once touch is confirmed working)
     const t = this.input.touch;
+    const p = this.player;
     ctx.save();
     ctx.resetTransform();
+    ctx.font = 'bold 13px monospace';
     ctx.fillStyle = t.active ? 'lime' : 'red';
-    ctx.font = 'bold 14px monospace';
-    ctx.fillText(`touch:${t.active ? 'ON' : 'OFF'} x:${Math.round(t.x)} y:${Math.round(t.y)}`, 8, 20);
+    ctx.fillText(`touch:${t.active ? 'ON' : 'OFF'} tx:${Math.round(t.x)} ty:${Math.round(t.y)}`, 8, 18);
+    ctx.fillStyle = 'yellow';
+    ctx.fillText(`player px:${p ? Math.round(p.x) : '?'} py:${p ? Math.round(p.y) : '?'}`, 8, 34);
     ctx.restore();
 
     ctx.restore();
