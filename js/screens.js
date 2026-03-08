@@ -121,7 +121,7 @@ class TitleScreen {
     ctx.fillStyle = '#ff69b4';
     ctx.font = 'italic 14px "Courier New"';
     ctx.textAlign = 'center';
-    ctx.fillText('~ Sanrio Shoot-Em-Up ~', CANVAS_W / 2, 268);
+    ctx.fillText('~ Kawaii Shoot-Em-Up ~', CANVAS_W / 2, 268);
     ctx.textAlign = 'left';
 
     // Animated kitty character (classic)
@@ -585,7 +585,7 @@ class WinScreen {
     ctx.fillText('CONGRATULATIONS!', CANVAS_W / 2, 180);
     ctx.fillStyle = '#ff69b4';
     ctx.font = '20px "Courier New"';
-    ctx.fillText('You saved the Sanrio world!', CANVAS_W / 2, 220);
+    ctx.fillText('You saved Kawaii World!', CANVAS_W / 2, 220);
     ctx.fillText('★ ★ ★ ★ ★', CANVAS_W / 2, 260);
     ctx.fillStyle = '#ffffff';
     ctx.font = '18px "Courier New"';

@@ -55,37 +55,37 @@ const CHARACTER_CONFIGS = [
 
 // ---------- Enemy Type Configs ----------
 const ENEMY_CONFIGS = {
-  pompomPal: {
+  puddingPal: {
     width: 36, height: 36,
     health: 2, speed: 70, points: 100,
     colors: { main: '#ffd700', ear: '#ffed85', cheek: '#ffb347', eye: '#1a1a1a', nose: '#8b4513' }
   },
-  cinnaPup: {
+  floppyPup: {
     width: 38, height: 40,
     health: 3, speed: 55, points: 150,
     colors: { main: '#ffffff', ear: '#87ceeb', cheek: '#ffb6c1', eye: '#87ceeb', nose: '#ffb6c1' }
   },
-  badtzGrunt: {
+  grumpGrunt: {
     width: 34, height: 38,
     health: 2, speed: 75, points: 120,
     colors: { main: '#1a1a2e', belly: '#2d2d4e', eye: '#ffffff', pupil: '#000000', beak: '#ffd700', hair: '#000000' }
   },
-  melodyBunny: {
+  rosyBunny: {
     width: 36, height: 42,
     health: 3, speed: 50, points: 150,
     colors: { main: '#ffb6c1', hood: '#ff69b4', hoodInner: '#ffffff', ear: '#ffffff', eye: '#1a1a1a' }
   },
-  keroppi: {
+  ribbsworth: {
     width: 38, height: 34,
     health: 2, speed: 65, points: 130,
     colors: { main: '#5cb85c', eyeWhite: '#ffffff', pupil: '#1a1a1a', mouth: '#ff69b4', belly: '#90ee90' }
   },
-  tuxedoSam: {
+  dapperSam: {
     width: 36, height: 42,
     health: 4, speed: 50, points: 160,
     colors: { main: '#2060a0', belly: '#ffffff', beak: '#ff8c00', bowtie: '#ff0000', eye: '#ffffff', pupil: '#1a1a1a' }
   },
-  chococat: {
+  chocolato: {
     width: 36, height: 36,
     health: 3, speed: 60, points: 140,
     colors: { main: '#1a1a1a', innerEar: '#3a2020', eye: '#1a1a1a', nose: '#6b3a00', whisker: '#888' }
@@ -94,32 +94,32 @@ const ENEMY_CONFIGS = {
 
 // ---------- Boss Configs ----------
 const BOSS_CONFIGS = {
-  pompompurin: {
-    name: 'Pompompurin',
+  sirPuddington: {
+    name: 'Sir Puddington',
     width: 100, height: 90,
     health: 300, speed: 60, points: 3000,
     colors: { main: '#ffd700', hatTop: '#a0522d', hatBrim: '#8b4513', hatBand: '#ffffff', eye: '#1a1a1a', cheek: '#ffb347', nose: '#8b4513' }
   },
-  cinnamoroll: {
-    name: 'Cinnamoroll',
+  floppsworth: {
+    name: 'Floppsworth',
     width: 110, height: 100,
     health: 400, speed: 70, points: 4000,
     colors: { main: '#ffffff', ear: '#ffb6c1', earInner: '#ff69b4', eye: '#87ceeb', pupil: '#1a1a1a', cheek: '#ffb6c1', tail: '#87ceeb', wing: '#d0e8ff' }
   },
-  myMelody: {
-    name: 'My Melody',
+  rosieHood: {
+    name: 'Rosie Hood',
     width: 110, height: 100,
     health: 400, speed: 65, points: 4000,
     colors: { main: '#ffb6c1', hood: '#ff69b4', hoodInner: '#ffffff', ear: '#ffffff', eye: '#1a1a1a', flower: '#ff0000', flowerCenter: '#ffd700' }
   },
-  badtzMaru: {
-    name: 'Badtz-Maru',
+  grumpwing: {
+    name: 'Grumpwing',
     width: 100, height: 110,
     health: 500, speed: 75, points: 5000,
     colors: { main: '#1a1a2e', belly: '#2d2d4e', eye: '#ffffff', pupil: '#cc0000', beak: '#ffd700', hair: '#000022', crown: '#9400d3', crownGem: '#ff69b4' }
   },
-  kuromi: {
-    name: 'Kuromi',
+  hexabun: {
+    name: 'Hexabun',
     width: 110, height: 110,
     health: 600, speed: 80, points: 6000,
     colors: { main: '#ffffff', hood: '#2d2d2d', hoodLining: '#ff69b4', skull: '#ffffff', skullEye: '#1a1a1a', ear: '#ff69b4', eye: '#9400d3', cheek: '#ff69b4' }

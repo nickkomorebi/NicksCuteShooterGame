@@ -109,25 +109,25 @@ const LEVEL_DEFS = [
   {
     name:    'Sweetheart Meadows',
     bgLevel: 1,
-    bossType: 'pompompurin',
+    bossType: 'sirPuddington',
     waves: [
       {
         delay: 1.5,
         groups: [
-          { type: 'pompomPal', count: 5, formation: 'V',    entryFrom: 'top',   cx: 240, cy: 130, sx: 55, sy: 48 }
+          { type: 'puddingPal', count: 5, formation: 'V',    entryFrom: 'top',   cx: 240, cy: 130, sx: 55, sy: 48 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'pompomPal', count: 4, formation: 'line', entryFrom: 'left',  cx: 200, cy: 100, sx: 58, sy: 50 },
-          { type: 'pompomPal', count: 4, formation: 'line', entryFrom: 'right', cx: 280, cy: 160, sx: 58, sy: 50 }
+          { type: 'puddingPal', count: 4, formation: 'line', entryFrom: 'left',  cx: 200, cy: 100, sx: 58, sy: 50 },
+          { type: 'puddingPal', count: 4, formation: 'line', entryFrom: 'right', cx: 280, cy: 160, sx: 58, sy: 50 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'pompomPal', count: 6, formation: 'grid', entryFrom: 'top',   cx: 240, cy: 120, sx: 58, sy: 55 }
+          { type: 'puddingPal', count: 6, formation: 'grid', entryFrom: 'top',   cx: 240, cy: 120, sx: 58, sy: 55 }
         ]
       }
     ]
@@ -137,26 +137,26 @@ const LEVEL_DEFS = [
   {
     name:    'Rainbow Sky',
     bgLevel: 2,
-    bossType: 'cinnamoroll',
+    bossType: 'floppsworth',
     waves: [
       {
         delay: 1.5,
         groups: [
-          { type: 'cinnaPup', count: 5, formation: 'line',  entryFrom: 'top',   cx: 240, cy: 100, sx: 60, sy: 52 }
+          { type: 'floppyPup', count: 5, formation: 'line',  entryFrom: 'top',   cx: 240, cy: 100, sx: 60, sy: 52 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'badtzGrunt', count: 4, formation: 'V',   entryFrom: 'left',  cx: 180, cy: 120, sx: 55, sy: 50 },
-          { type: 'cinnaPup',   count: 3, formation: 'line', entryFrom: 'right', cx: 320, cy: 100, sx: 58, sy: 50 }
+          { type: 'grumpGrunt', count: 4, formation: 'V',   entryFrom: 'left',  cx: 180, cy: 120, sx: 55, sy: 50 },
+          { type: 'floppyPup',   count: 3, formation: 'line', entryFrom: 'right', cx: 320, cy: 100, sx: 58, sy: 50 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'cinnaPup',   count: 4, formation: 'grid', entryFrom: 'top',  cx: 160, cy: 115, sx: 56, sy: 52 },
-          { type: 'badtzGrunt', count: 4, formation: 'grid', entryFrom: 'top',  cx: 320, cy: 115, sx: 56, sy: 52 }
+          { type: 'floppyPup',   count: 4, formation: 'grid', entryFrom: 'top',  cx: 160, cy: 115, sx: 56, sy: 52 },
+          { type: 'grumpGrunt', count: 4, formation: 'grid', entryFrom: 'top',  cx: 320, cy: 115, sx: 56, sy: 52 }
         ]
       }
     ]
@@ -166,32 +166,32 @@ const LEVEL_DEFS = [
   {
     name:    'Star Forest',
     bgLevel: 3,
-    bossType: 'myMelody',
+    bossType: 'rosieHood',
     waves: [
       {
         delay: 1.5,
         groups: [
-          { type: 'melodyBunny', count: 5, formation: 'V',    entryFrom: 'top',  cx: 240, cy: 110, sx: 58, sy: 52 }
+          { type: 'rosyBunny', count: 5, formation: 'V',    entryFrom: 'top',  cx: 240, cy: 110, sx: 58, sy: 52 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'keroppi',     count: 4, formation: 'line', entryFrom: 'left', cx: 180, cy: 105, sx: 58, sy: 52 },
-          { type: 'melodyBunny', count: 4, formation: 'line', entryFrom: 'right',cx: 320, cy: 105, sx: 58, sy: 52 }
+          { type: 'ribbsworth',     count: 4, formation: 'line', entryFrom: 'left', cx: 180, cy: 105, sx: 58, sy: 52 },
+          { type: 'rosyBunny', count: 4, formation: 'line', entryFrom: 'right',cx: 320, cy: 105, sx: 58, sy: 52 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'melodyBunny', count: 3, formation: 'line', entryFrom: 'top',  cx: 180, cy:  90, sx: 58, sy: 50 },
-          { type: 'keroppi',     count: 3, formation: 'line', entryFrom: 'top',  cx: 300, cy:  90, sx: 58, sy: 50 }
+          { type: 'rosyBunny', count: 3, formation: 'line', entryFrom: 'top',  cx: 180, cy:  90, sx: 58, sy: 50 },
+          { type: 'ribbsworth',     count: 3, formation: 'line', entryFrom: 'top',  cx: 300, cy:  90, sx: 58, sy: 50 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'melodyBunny', count: 6, formation: 'diamond', entryFrom: 'top', cx: 240, cy: 120, sx: 58, sy: 52 }
+          { type: 'rosyBunny', count: 6, formation: 'diamond', entryFrom: 'top', cx: 240, cy: 120, sx: 58, sy: 52 }
         ]
       }
     ]
@@ -201,32 +201,32 @@ const LEVEL_DEFS = [
   {
     name:    'Ocean Deep',
     bgLevel: 4,
-    bossType: 'badtzMaru',
+    bossType: 'grumpwing',
     waves: [
       {
         delay: 1.5,
         groups: [
-          { type: 'tuxedoSam', count: 5, formation: 'V',    entryFrom: 'top',  cx: 240, cy: 110, sx: 58, sy: 52 }
+          { type: 'dapperSam', count: 5, formation: 'V',    entryFrom: 'top',  cx: 240, cy: 110, sx: 58, sy: 52 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'chococat',  count: 4, formation: 'grid', entryFrom: 'left', cx: 160, cy: 110, sx: 56, sy: 52 },
-          { type: 'tuxedoSam', count: 4, formation: 'grid', entryFrom: 'right',cx: 320, cy: 110, sx: 56, sy: 52 }
+          { type: 'chocolato',  count: 4, formation: 'grid', entryFrom: 'left', cx: 160, cy: 110, sx: 56, sy: 52 },
+          { type: 'dapperSam', count: 4, formation: 'grid', entryFrom: 'right',cx: 320, cy: 110, sx: 56, sy: 52 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'tuxedoSam', count: 3, formation: 'line', entryFrom: 'top',  cx: 170, cy:  95, sx: 58, sy: 50 },
-          { type: 'chococat',  count: 3, formation: 'line', entryFrom: 'top',  cx: 310, cy:  95, sx: 58, sy: 50 }
+          { type: 'dapperSam', count: 3, formation: 'line', entryFrom: 'top',  cx: 170, cy:  95, sx: 58, sy: 50 },
+          { type: 'chocolato',  count: 3, formation: 'line', entryFrom: 'top',  cx: 310, cy:  95, sx: 58, sy: 50 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'chococat',  count: 7, formation: 'diamond', entryFrom: 'top', cx: 240, cy: 120, sx: 58, sy: 52 }
+          { type: 'chocolato',  count: 7, formation: 'diamond', entryFrom: 'top', cx: 240, cy: 120, sx: 58, sy: 52 }
         ]
       }
     ]
@@ -236,41 +236,41 @@ const LEVEL_DEFS = [
   {
     name:    'Starlight Castle',
     bgLevel: 5,
-    bossType: 'kuromi',
+    bossType: 'hexabun',
     waves: [
       {
         delay: 1.5,
         groups: [
-          { type: 'pompomPal',   count: 4, formation: 'line',    entryFrom: 'top',   cx: 240, cy: 100, sx: 58, sy: 52 },
-          { type: 'badtzGrunt',  count: 3, formation: 'V',       entryFrom: 'left',  cx: 140, cy: 120, sx: 58, sy: 50 }
+          { type: 'puddingPal',   count: 4, formation: 'line',    entryFrom: 'top',   cx: 240, cy: 100, sx: 58, sy: 52 },
+          { type: 'grumpGrunt',  count: 3, formation: 'V',       entryFrom: 'left',  cx: 140, cy: 120, sx: 58, sy: 50 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'melodyBunny', count: 4, formation: 'grid',    entryFrom: 'right', cx: 340, cy: 110, sx: 56, sy: 52 },
-          { type: 'keroppi',     count: 4, formation: 'line',    entryFrom: 'top',   cx: 180, cy: 100, sx: 58, sy: 50 }
+          { type: 'rosyBunny', count: 4, formation: 'grid',    entryFrom: 'right', cx: 340, cy: 110, sx: 56, sy: 52 },
+          { type: 'ribbsworth',     count: 4, formation: 'line',    entryFrom: 'top',   cx: 180, cy: 100, sx: 58, sy: 50 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'tuxedoSam',   count: 3, formation: 'line',    entryFrom: 'left',  cx: 150, cy: 105, sx: 58, sy: 50 },
-          { type: 'chococat',    count: 3, formation: 'line',    entryFrom: 'right', cx: 330, cy: 105, sx: 58, sy: 50 },
-          { type: 'cinnaPup',    count: 3, formation: 'line',    entryFrom: 'top',   cx: 240, cy:  90, sx: 58, sy: 50 }
+          { type: 'dapperSam',   count: 3, formation: 'line',    entryFrom: 'left',  cx: 150, cy: 105, sx: 58, sy: 50 },
+          { type: 'chocolato',    count: 3, formation: 'line',    entryFrom: 'right', cx: 330, cy: 105, sx: 58, sy: 50 },
+          { type: 'floppyPup',    count: 3, formation: 'line',    entryFrom: 'top',   cx: 240, cy:  90, sx: 58, sy: 50 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'pompomPal',   count: 4, formation: 'diamond', entryFrom: 'top',   cx: 140, cy: 110, sx: 56, sy: 50 },
-          { type: 'chococat',    count: 4, formation: 'diamond', entryFrom: 'top',   cx: 340, cy: 110, sx: 56, sy: 50 }
+          { type: 'puddingPal',   count: 4, formation: 'diamond', entryFrom: 'top',   cx: 140, cy: 110, sx: 56, sy: 50 },
+          { type: 'chocolato',    count: 4, formation: 'diamond', entryFrom: 'top',   cx: 340, cy: 110, sx: 56, sy: 50 }
         ]
       },
       {
         delay: 1.0,
         groups: [
-          { type: 'melodyBunny', count: 8, formation: 'grid',    entryFrom: 'top',   cx: 240, cy: 110, sx: 56, sy: 52 }
+          { type: 'rosyBunny', count: 8, formation: 'grid',    entryFrom: 'top',   cx: 240, cy: 110, sx: 56, sy: 52 }
         ]
       }
     ]

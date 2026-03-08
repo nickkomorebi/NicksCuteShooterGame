@@ -285,21 +285,21 @@ function drawEnemyByType(ctx, x, y, type, colors, scale) {
   scale = scale || 1;
   const cx = x, cy = y;
   switch (type) {
-    case 'pompomPal':    drawPompomPal(ctx, cx, cy, scale, colors); break;
-    case 'cinnaPup':     drawCinnaPup(ctx, cx, cy, scale, colors); break;
-    case 'badtzGrunt':   drawBadtzGrunt(ctx, cx, cy, scale, colors); break;
-    case 'melodyBunny':  drawMelodyBunny(ctx, cx, cy, scale, colors); break;
-    case 'keroppi':      drawKeroppi(ctx, cx, cy, scale, colors); break;
-    case 'tuxedoSam':    drawTuxedoSam(ctx, cx, cy, scale, colors); break;
-    case 'chococat':     drawChococat(ctx, cx, cy, scale, colors); break;
-    default: drawPompomPal(ctx, cx, cy, scale, colors);
+    case 'puddingPal':   drawPuddingPal(ctx, cx, cy, scale, colors); break;
+    case 'floppyPup':    drawFloppyPup(ctx, cx, cy, scale, colors); break;
+    case 'grumpGrunt':   drawGrumpGrunt(ctx, cx, cy, scale, colors); break;
+    case 'rosyBunny':    drawRosyBunny(ctx, cx, cy, scale, colors); break;
+    case 'ribbsworth':   drawRibbsworth(ctx, cx, cy, scale, colors); break;
+    case 'dapperSam':    drawDapperSam(ctx, cx, cy, scale, colors); break;
+    case 'chocolato':    drawChocolato(ctx, cx, cy, scale, colors); break;
+    default: drawPuddingPal(ctx, cx, cy, scale, colors);
   }
 }
 
 // ============================================================
-// Pompom Pal — Pompompurin-style golden hamster with beret hat
+// Pudding Pal — chubby golden pup with beret hat
 // ============================================================
-function drawPompomPal(ctx, cx, cy, s, c) {
+function drawPuddingPal(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
@@ -314,7 +314,7 @@ function drawPompomPal(ctx, cx, cy, s, c) {
   ctx.beginPath(); ctx.moveTo(x - r*0.52, y - r*0.14); ctx.lineTo(x - r*1.32, y - r*0.50); ctx.lineTo(x - r*1.08, y + r*0.28); ctx.lineTo(x - r*0.44, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(x + r*0.52, y - r*0.14); ctx.lineTo(x + r*1.32, y - r*0.50); ctx.lineTo(x + r*1.08, y + r*0.28); ctx.lineTo(x + r*0.44, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
 
-  // Round golden body (Pompompurin is very round/pudgy)
+  // Round golden body
   _sphere(ctx, x, y, r, c.main, 'rgba(0,0,0,0.35)');
 
   // Small round ears
@@ -328,7 +328,7 @@ function drawPompomPal(ctx, cx, cy, s, c) {
   ctx.arc(x + r * 0.72, y - r * 0.62, r * 0.16, 0, Math.PI * 2);
   ctx.fill();
 
-  // ---- BERET HAT (Pompompurin's most iconic feature!) ----
+  // ---- BERET HAT (their most iconic feature!) ----
   // Brim (wide flat brown disc)
   ctx.fillStyle = _darken(c.cheek || '#a0522d', 0.05);
   ctx.strokeStyle = 'rgba(0,0,0,0.4)';
@@ -363,7 +363,7 @@ function drawPompomPal(ctx, cx, cy, s, c) {
   ctx.fill();
   ctx.globalAlpha = 1;
 
-  // Sleepy droopy eyes (Pompompurin always looks half-asleep/happy)
+  // Sleepy droopy eyes
   ctx.fillStyle = c.eye;
   ctx.beginPath();
   ctx.ellipse(x - r * 0.3, y - r * 0.06, r * 0.13, r * 0.08, 0, 0, Math.PI * 2);
@@ -405,9 +405,9 @@ function drawPompomPal(ctx, cx, cy, s, c) {
 }
 
 // ============================================================
-// Cinna-Pup — Cinnamoroll-style white puppy
+// Floppy Pup — floppy-eared white puppy
 // ============================================================
-function drawCinnaPup(ctx, cx, cy, s, c) {
+function drawFloppyPup(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
@@ -422,7 +422,7 @@ function drawCinnaPup(ctx, cx, cy, s, c) {
   ctx.beginPath(); ctx.moveTo(x - r*0.50, y - r*0.12); ctx.lineTo(x - r*1.28, y - r*0.46); ctx.lineTo(x - r*1.06, y + r*0.30); ctx.lineTo(x - r*0.42, y + r*0.16); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(x + r*0.50, y - r*0.12); ctx.lineTo(x + r*1.28, y - r*0.46); ctx.lineTo(x + r*1.06, y + r*0.30); ctx.lineTo(x + r*0.42, y + r*0.16); ctx.closePath(); ctx.fill(); ctx.stroke();
 
-  // Big floppy BLUE ears (hang way down — Cinnamoroll's most iconic feature)
+  // Big floppy BLUE ears (hang way down — their most iconic feature)
   ctx.fillStyle = _sphereGrad(ctx, x - r*0.98, y + r*0.85, r*0.46, c.ear);
   ctx.strokeStyle = 'rgba(0,0,0,0.3)';
   ctx.lineWidth = 1;
@@ -469,7 +469,7 @@ function drawCinnaPup(ctx, cx, cy, s, c) {
   ctx.fill();
   ctx.globalAlpha = 1;
 
-  // Large sparkly blue eyes (Cinnamoroll's defining eyes)
+  // Large sparkly blue eyes
   _sphere(ctx, x - r * 0.28, y - r * 0.05, r * 0.18, c.eye, 'rgba(0,0,0,0.3)');
   _sphere(ctx, x + r * 0.28, y - r * 0.05, r * 0.18, c.eye, 'rgba(0,0,0,0.3)');
   // Pupils
@@ -516,9 +516,9 @@ function drawCinnaPup(ctx, cx, cy, s, c) {
 }
 
 // ============================================================
-// Badtz-Grunt — Badtz-Maru-style punk penguin
+// Grump Grunt — spiky punk penguin
 // ============================================================
-function drawBadtzGrunt(ctx, cx, cy, s, c) {
+function drawGrumpGrunt(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
@@ -528,7 +528,7 @@ function drawBadtzGrunt(ctx, cx, cy, s, c) {
   const egB = ctx.createRadialGradient(x, y - r*1.5, 0, x, y - r*2.0, r*0.65);
   egB.addColorStop(0, 'rgba(255,220,60,0.92)'); egB.addColorStop(0.5, 'rgba(255,140,0,0.48)'); egB.addColorStop(1, 'rgba(255,60,0,0)');
   ctx.fillStyle = egB; ctx.beginPath(); ctx.ellipse(x, y - r*1.62, r*0.19, r*0.46, 0, 0, Math.PI*2); ctx.fill();
-  // Wings (dark — match Badtz-Maru's black color)
+  // Wings (dark — match the black color)
   ctx.fillStyle = '#2a2a44'; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(x - r*0.50, y - r*0.12); ctx.lineTo(x - r*1.28, y - r*0.46); ctx.lineTo(x - r*1.04, y + r*0.28); ctx.lineTo(x - r*0.42, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(x + r*0.50, y - r*0.12); ctx.lineTo(x + r*1.28, y - r*0.46); ctx.lineTo(x + r*1.04, y + r*0.28); ctx.lineTo(x + r*0.42, y + r*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -549,7 +549,7 @@ function drawBadtzGrunt(ctx, cx, cy, s, c) {
   // Head
   _sphere(ctx, x, y - r * 0.46, r * 0.76, c.main, 'rgba(0,0,0,0.4)');
 
-  // ---- Spiky hair (4 dramatic spikes — Badtz-Maru's signature) ----
+  // ---- Spiky hair (4 dramatic spikes) ----
   ctx.fillStyle = '#000022';
   const spikes = [-1.6, -0.52, 0.52, 1.6];
   for (const off of spikes) {
@@ -610,9 +610,9 @@ function drawBadtzGrunt(ctx, cx, cy, s, c) {
 }
 
 // ============================================================
-// Melody Bunny — My Melody-style bunny in pink hood
+// Rosy Bunny — bunny in pink hood
 // ============================================================
-function drawMelodyBunny(ctx, cx, cy, s, c) {
+function drawRosyBunny(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
@@ -647,7 +647,7 @@ function drawMelodyBunny(ctx, cx, cy, s, c) {
   ctx.ellipse(x + r * 0.36, y - r * 1.35, r * 0.1, r * 0.4, 0.1, 0, Math.PI * 2);
   ctx.fill();
 
-  // Pink hood (My Melody's defining feature — big rounded pink dome)
+  // Pink hood (big rounded pink dome)
   ctx.fillStyle = _sphereGrad(ctx, x, y - r*0.32, r, c.hood);
   ctx.strokeStyle = 'rgba(0,0,0,0.28)';
   ctx.lineWidth = 1.2;
@@ -688,13 +688,13 @@ function drawMelodyBunny(ctx, cx, cy, s, c) {
   ctx.arc(x + r * 0.27, y + r * 0.01, r * 0.035, 0, Math.PI * 2);
   ctx.fill();
 
-  // Small yellow nose (My Melody has a tiny yellow oval nose)
+  // Small yellow nose
   ctx.fillStyle = '#ffd700';
   ctx.beginPath();
   ctx.ellipse(x, y + r * 0.19, r * 0.065, r * 0.05, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Pink flower on hood (My Melody's detail)
+  // Pink flower on hood
   const fx = x + r * 0.66, fy = y - r * 0.28;
   const fr = r * 0.1;
   ctx.fillStyle = c.flower || '#ff0000';
@@ -713,9 +713,9 @@ function drawMelodyBunny(ctx, cx, cy, s, c) {
 }
 
 // ============================================================
-// Keroppi — giant-eyed frog
+// Ribbsworth — giant-eyed frog
 // ============================================================
-function drawKeroppi(ctx, cx, cy, s, c) {
+function drawRibbsworth(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
@@ -739,7 +739,7 @@ function drawKeroppi(ctx, cx, cy, s, c) {
   ctx.ellipse(x, y + r * 0.36, r * 0.62, r * 0.56, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // ---- HUGE goggle eyes on TOP of head (Keroppi's most iconic feature) ----
+  // ---- HUGE goggle eyes on TOP of head (their most iconic feature) ----
   _sphere(ctx, x - r * 0.44, y - r * 0.70, r * 0.42, c.eyeWhite, 'rgba(0,0,0,0.35)');
   _sphere(ctx, x + r * 0.44, y - r * 0.70, r * 0.42, c.eyeWhite, 'rgba(0,0,0,0.35)');
   // Pupils
@@ -759,7 +759,7 @@ function drawKeroppi(ctx, cx, cy, s, c) {
   ctx.arc(x + r * 0.55, y - r * 0.79, r * 0.11, 0, Math.PI * 2);
   ctx.fill();
 
-  // V-shaped frog grin (Keroppi's signature W/V mouth)
+  // V-shaped frog grin (signature W/V mouth)
   ctx.strokeStyle = c.mouth;
   ctx.lineWidth = 2;
   ctx.lineCap = 'round';
@@ -776,9 +776,9 @@ function drawKeroppi(ctx, cx, cy, s, c) {
 }
 
 // ============================================================
-// Tuxedo Sam — formal blue penguin
+// Dapper Sam — formal blue penguin
 // ============================================================
-function drawTuxedoSam(ctx, cx, cy, s, c) {
+function drawDapperSam(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
@@ -788,7 +788,7 @@ function drawTuxedoSam(ctx, cx, cy, s, c) {
   const egS = ctx.createRadialGradient(x, y - r*1.5, 0, x, y - r*2.0, r*0.65);
   egS.addColorStop(0, 'rgba(100,180,255,0.92)'); egS.addColorStop(0.5, 'rgba(40,100,220,0.5)'); egS.addColorStop(1, 'rgba(0,40,180,0)');
   ctx.fillStyle = egS; ctx.beginPath(); ctx.ellipse(x, y - r*1.62, r*0.20, r*0.48, 0, 0, Math.PI*2); ctx.fill();
-  // Wings (blue to match tuxedo)
+  // Wings (blue to match the formal suit)
   ctx.fillStyle = _darken(c.main, 0.18); ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(x - r*0.50, y - r*0.12); ctx.lineTo(x - r*1.28, y - r*0.46); ctx.lineTo(x - r*1.06, y + r*0.30); ctx.lineTo(x - r*0.42, y + r*0.16); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(x + r*0.50, y - r*0.12); ctx.lineTo(x + r*1.28, y - r*0.46); ctx.lineTo(x + r*1.06, y + r*0.30); ctx.lineTo(x + r*0.42, y + r*0.16); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -806,7 +806,7 @@ function drawTuxedoSam(ctx, cx, cy, s, c) {
   ctx.ellipse(x, y + r * 0.44, r * 0.46, r * 0.64, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Red bowtie (prominent, Tuxedo Sam's signature)
+  // Red bowtie (prominent, their signature)
   ctx.fillStyle = c.bowtie;
   ctx.strokeStyle = 'rgba(0,0,0,0.3)';
   ctx.lineWidth = 0.8;
@@ -866,9 +866,9 @@ function drawTuxedoSam(ctx, cx, cy, s, c) {
 }
 
 // ============================================================
-// Chococat — black cat with huge chocolate nose
+// Chocolato — black cat with huge chocolate nose
 // ============================================================
-function drawChococat(ctx, cx, cy, s, c) {
+function drawChocolato(ctx, cx, cy, s, c) {
   ctx.save();
   ctx.scale(s, s);
   const x = cx / s, y = cy / s;
@@ -918,10 +918,10 @@ function drawChococat(ctx, cx, cy, s, c) {
   ctx.closePath();
   ctx.fill();
 
-  // ---- BIG chocolate oval nose (Chococat's #1 defining feature) ----
+  // ---- BIG chocolate oval nose (their #1 defining feature) ----
   _sphere(ctx, x, y + r * 0.18, r * 0.26, c.nose, 'rgba(0,0,0,0.3)');
 
-  // ---- HUGE black eyes (Chococat's other defining feature alongside the nose) ----
+  // ---- HUGE black eyes (other defining feature alongside the nose) ----
   ctx.fillStyle = '#1a1a1a';
   ctx.strokeStyle = 'rgba(0,0,0,0.5)';
   ctx.lineWidth = 0.8;
@@ -985,11 +985,11 @@ function drawBoss(ctx, boss) {
   }
 
   switch (boss.bossType) {
-    case 'pompompurin': drawPompompurinBoss(ctx, cx, cy, s, c); break;
-    case 'cinnamoroll': drawCinnamorollBoss(ctx, cx, cy, s, c); break;
-    case 'myMelody':    drawMyMelodyBoss(ctx, cx, cy, s, c); break;
-    case 'badtzMaru':   drawBadtzMaruBoss(ctx, cx, cy, s, c); break;
-    case 'kuromi':      drawKuromiBoss(ctx, cx, cy, s, c); break;
+    case 'sirPuddington': drawSirPuddingtonBoss(ctx, cx, cy, s, c); break;
+    case 'floppsworth':   drawFloppsworthBoss(ctx, cx, cy, s, c); break;
+    case 'rosieHood':     drawRosieHoodBoss(ctx, cx, cy, s, c); break;
+    case 'grumpwing':     drawGrumpwingBoss(ctx, cx, cy, s, c); break;
+    case 'hexabun':       drawHexabunBoss(ctx, cx, cy, s, c); break;
   }
 
   // Crown / sparkle for all bosses
@@ -1019,9 +1019,9 @@ function _drawCrown(ctx, cx, cy, r, color) {
 }
 
 // ============================================================
-// Pompompurin Boss — giant golden pudding pup with beret
+// Sir Puddington Boss — giant golden pudding pup with beret
 // ============================================================
-function drawPompompurinBoss(ctx, cx, cy, s, c) {
+function drawSirPuddingtonBoss(ctx, cx, cy, s, c) {
   const r = 36 * s;
 
   // Boss engine glow (top — 3 vents)
@@ -1117,12 +1117,12 @@ function drawPompompurinBoss(ctx, cx, cy, s, c) {
 }
 
 // ============================================================
-// Cinnamoroll Boss — giant white puppy with enormous blue ears
+// Floppsworth Boss — giant white puppy with enormous blue ears
 // ============================================================
-function drawCinnamorollBoss(ctx, cx, cy, s, c) {
+function drawFloppsworthBoss(ctx, cx, cy, s, c) {
   const r = 38 * s;
 
-  // Boss engine glow (top — 3 vents, blue/white for Cinnamoroll)
+  // Boss engine glow (top — 3 vents, blue/white)
   for (let vi = -1; vi <= 1; vi++) {
     const egCI = ctx.createRadialGradient(cx + vi*r*0.38, cy - r*1.55, 0, cx + vi*r*0.38, cy - r*2.15, r*0.64);
     egCI.addColorStop(0, 'rgba(180,230,255,0.96)'); egCI.addColorStop(0.5, 'rgba(80,160,255,0.52)'); egCI.addColorStop(1, 'rgba(0,80,220,0)');
@@ -1227,12 +1227,12 @@ function drawCinnamorollBoss(ctx, cx, cy, s, c) {
 }
 
 // ============================================================
-// My Melody Boss — giant pink-hooded bunny
+// Rosie Hood Boss — giant pink-hooded bunny
 // ============================================================
-function drawMyMelodyBoss(ctx, cx, cy, s, c) {
+function drawRosieHoodBoss(ctx, cx, cy, s, c) {
   const r = 37 * s;
 
-  // Boss engine glow (top — 3 vents, pink for My Melody)
+  // Boss engine glow (top — 3 vents, pink)
   for (let vi = -1; vi <= 1; vi++) {
     const egMM = ctx.createRadialGradient(cx + vi*r*0.36, cy - r*1.52, 0, cx + vi*r*0.36, cy - r*2.10, r*0.62);
     egMM.addColorStop(0, 'rgba(255,180,240,0.95)'); egMM.addColorStop(0.5, 'rgba(255,80,200,0.52)'); egMM.addColorStop(1, 'rgba(200,0,150,0)');
@@ -1329,12 +1329,12 @@ function drawMyMelodyBoss(ctx, cx, cy, s, c) {
 }
 
 // ============================================================
-// Badtz-Maru Boss — giant grumpy punk penguin with crown
+// Grumpwing Boss — giant grumpy punk penguin with crown
 // ============================================================
-function drawBadtzMaruBoss(ctx, cx, cy, s, c) {
+function drawGrumpwingBoss(ctx, cx, cy, s, c) {
   const r = 36 * s;
 
-  // Boss engine glow (top — 3 vents, fierce orange/red for Badtz-Maru)
+  // Boss engine glow (top — 3 vents, fierce orange/red)
   for (let vi = -1; vi <= 1; vi++) {
     const egBM = ctx.createRadialGradient(cx + vi*r*0.38, cy - r*1.55, 0, cx + vi*r*0.38, cy - r*2.18, r*0.65);
     egBM.addColorStop(0, 'rgba(255,120,0,0.95)'); egBM.addColorStop(0.5, 'rgba(200,40,0,0.55)'); egBM.addColorStop(1, 'rgba(100,0,0,0)');
@@ -1388,7 +1388,7 @@ function drawBadtzMaruBoss(ctx, cx, cy, s, c) {
   // Large oval eyes
   _sphere(ctx, cx - r * 0.28, cy - r * 0.6, r * 0.18, c.eye, 'rgba(0,0,0,0.4)');
   _sphere(ctx, cx + r * 0.28, cy - r * 0.6, r * 0.18, c.eye, 'rgba(0,0,0,0.4)');
-  // Red pupils (boss Badtz-Maru has red pupils)
+  // Red pupils (boss Grumpwing has red pupils)
   ctx.fillStyle = c.pupil;
   ctx.beginPath();
   ctx.arc(cx - r * 0.26, cy - r * 0.58, r * 0.11, 0, Math.PI * 2);
@@ -1438,12 +1438,12 @@ function drawBadtzMaruBoss(ctx, cx, cy, s, c) {
 }
 
 // ============================================================
-// Kuromi Boss — dark jester bunny
+// Hexabun Boss — dark jester bunny
 // ============================================================
-function drawKuromiBoss(ctx, cx, cy, s, c) {
+function drawHexabunBoss(ctx, cx, cy, s, c) {
   const r = 37 * s;
 
-  // Boss engine glow (top — 3 vents, eerie purple for Kuromi)
+  // Boss engine glow (top — 3 vents, eerie purple)
   for (let vi = -1; vi <= 1; vi++) {
     const egKU = ctx.createRadialGradient(cx + vi*r*0.36, cy - r*1.52, 0, cx + vi*r*0.36, cy - r*2.10, r*0.62);
     egKU.addColorStop(0, 'rgba(200,80,255,0.95)'); egKU.addColorStop(0.5, 'rgba(120,0,200,0.55)'); egKU.addColorStop(1, 'rgba(60,0,100,0)');
@@ -1475,7 +1475,7 @@ function drawKuromiBoss(ctx, cx, cy, s, c) {
   ctx.ellipse(cx - r * 0.3, cy - r * 0.52, r * 0.32, r * 0.18, -0.3, 0, Math.PI * 2);
   ctx.fill();
 
-  // Skull motif on hood (pink skull, centered — Kuromi's most iconic detail)
+  // Skull motif on hood (pink skull, centered — most iconic detail)
   const sx = cx, sy = cy - r * 0.28;
   _sphere(ctx, sx, sy, r * 0.18, '#ff69b4', 'rgba(0,0,0,0.3)');
   ctx.fillStyle = c.skullEye;
