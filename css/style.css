@@ -10,6 +10,7 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  min-height: 100dvh;
   font-family: 'Courier New', Courier, monospace;
   overflow: hidden;
 }
@@ -90,6 +91,7 @@ body {
 
 #gameCanvas {
   display: block;
+  background: #0a0015;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   border: 2px solid #ff69b4;

@@ -61,13 +61,16 @@ class Game {
   start() {
     this._fitCanvas();
     window.addEventListener('resize', () => this._fitCanvas());
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', () => this._fitCanvas());
     this.lastTime = performance.now();
     requestAnimationFrame(ts => this.loop(ts));
   }
 
   // Scale the canvas CSS size to fit the viewport while preserving aspect ratio
   _fitCanvas() {
-    const scale = Math.min(1, window.innerWidth / CANVAS_W, window.innerHeight / CANVAS_H);
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const vw = window.visualViewport ? window.visualViewport.width  : window.innerWidth;
+    const scale = Math.min(1, vw / CANVAS_W, vh / CANVAS_H);
     this.canvas.style.width  = Math.round(CANVAS_W * scale) + 'px';
     this.canvas.style.height = Math.round(CANVAS_H * scale) + 'px';
   }
@@ -89,6 +92,7 @@ class Game {
   // UPDATE
   // =========================================================
   update(dt) {
+    this._decayFlash(dt);
     switch (this.state) {
       case 'TITLE':       this._updateTitle(dt); break;
       case 'CHAR_SELECT': this._updateCharSelect(dt); break;
@@ -175,7 +179,6 @@ class Game {
     this._updateBG(dt);
     this._checkCollisions();
     this._checkPlayerDead();
-    this._decayFlash(dt);
 
     // Check if current wave is cleared (no enemies left and no more waves pending)
     if (this.enemies.length === 0 && !this.allWavesCleared && this.waveIndex >= level.waves.length) {
@@ -252,7 +255,6 @@ class Game {
     this._updateBG(dt);
     this._checkBossCollisions();
     this._checkPlayerDead();
-    this._decayFlash(dt);
 
     // Boss death
     if (!this.boss.alive) {
@@ -264,7 +266,6 @@ class Game {
     this.boss.deathTimer -= dt;
     this._updateParticles(dt);
     this._updateBG(dt);
-    this._decayFlash(dt);
 
     // Spam particles while dying
     if (Math.random() < 0.4) {
@@ -825,10 +826,6 @@ class Game {
   }
 
   _drawLevelClear(ctx) {
-    // Draw game world faintly in background
-    if (this.bgState) drawBackground(ctx, this.currentLevel + 1, this.bgState);
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
     this.levelClearScreen.draw(ctx);
   }
 

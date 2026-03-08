@@ -88,23 +88,18 @@ class TitleScreen {
     }
     ctx.globalAlpha = 1;
 
-    // Decorative hearts row
-    ctx.fillStyle = 'rgba(255,105,180,0.15)';
-    ctx.fillRect(0, CANVAS_H * 0.18, CANVAS_W, 2);
-    ctx.fillRect(0, CANVAS_H * 0.82, CANVAS_W, 2);
-
     // Title
     ctx.save();
     ctx.font = 'bold 44px "Courier New"';
     ctx.textAlign = 'center';
     // Shadow layer
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillText('KITTY', CANVAS_W / 2 + 3, 195);
-    ctx.fillText('FIGHTERS', CANVAS_W / 2 + 3, 245);
+    ctx.fillText('SPACE', CANVAS_W / 2 + 3, 195);
+    ctx.fillText('CATS', CANVAS_W / 2 + 3, 245);
     // Rainbow text
     const colors6 = ['#ff0000','#ff8800','#ffdd00','#00cc44','#0099ff','#cc00ff','#ff69b4'];
-    const title1 = 'KITTY';
-    const title2 = 'FIGHTERS';
+    const title1 = 'SPACE';
+    const title2 = 'CATS';
     ctx.font = 'bold 46px "Courier New"';
     const char1W = ctx.measureText(title1).width;
     const char2W = ctx.measureText(title2).width;
@@ -404,17 +399,12 @@ class LevelClearScreen {
     }
 
     // "LEVEL CLEAR!"
-    ctx.save();
-    const scale = 1 + 0.015 * Math.sin(this.timer * 1.5);
-    ctx.translate(CANVAS_W / 2, 150);
-    ctx.scale(scale, scale);
     ctx.font = 'bold 38px "Courier New"';
     ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillText('LEVEL CLEAR!', 2, 2);
+    ctx.fillText('LEVEL CLEAR!', CANVAS_W / 2 + 2, 152);
     ctx.fillStyle = '#ffd700';
-    ctx.fillText('LEVEL CLEAR!', 0, 0);
-    ctx.restore();
+    ctx.fillText('LEVEL CLEAR!', CANVAS_W / 2, 150);
 
     // Level name
     ctx.font = '16px "Courier New"';
@@ -502,20 +492,15 @@ class GameOverScreen {
     }
 
     // "GAME OVER" text
-    ctx.save();
-    const pulse = 1 + 0.015 * Math.sin(this.timer * 1.5);
-    ctx.translate(CANVAS_W / 2, 240);
-    ctx.scale(pulse, pulse);
     ctx.font = 'bold 52px "Courier New"';
     ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillText('GAME', 3, 3);
-    ctx.fillText('OVER', 3, 58);
+    ctx.fillText('GAME', CANVAS_W / 2 + 3, 243);
+    ctx.fillText('OVER', CANVAS_W / 2 + 3, 298);
     ctx.fillStyle = '#cc1133';
-    ctx.fillText('GAME', 0, 0);
+    ctx.fillText('GAME', CANVAS_W / 2, 240);
     ctx.fillStyle = '#ff1155';
-    ctx.fillText('OVER', 0, 55);
-    ctx.restore();
+    ctx.fillText('OVER', CANVAS_W / 2, 295);
 
     // Score
     ctx.font = '20px "Courier New"';
